@@ -1,0 +1,7 @@
+.env
+venv/
+env/
+__pycache__/
+output_diagrams/
+diagrams_metadata.csv
+*.json
