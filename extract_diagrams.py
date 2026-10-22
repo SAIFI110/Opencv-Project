@@ -3,7 +3,6 @@ import json
 import base64
 import io
 import csv
-import re
 from PIL import Image 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -27,7 +26,7 @@ OUTPUT_IMAGE_DIR = "output_diagrams"
 METADATA_CSV_PATH = "diagrams_metadata.csv"
 
 # 5. Label Padding: Add 1.5% margin around the bounding box so text pointers aren't clipped
-BOUNDING_BOX_PADDING_RATIO = 0.0015
+BOUNDING_BOX_PADDING_RATIO = 0.015
 
 # Ensure output directory exists
 os.makedirs(OUTPUT_IMAGE_DIR, exist_ok=True)
@@ -152,38 +151,46 @@ def load_chunks_data(filepath: str) -> list:
     return []
 
 # ==============================================================================
-# PHASE 4: METADATA MATCHER (CHAPTERS & FIGURE CAPTIONS FROM DOCUMENT AI)
+# ==============================================================================
+# PHASE 4: OFFICIAL TEXTBOOK TOC REGISTRY (GRADE 8 SCIENCE) - METHOD 1
 # ==============================================================================
 
-def build_chapter_index(blocks: list) -> dict:
+# Official Unit, Chapter, and Lesson boundaries from Grade 8 Science Textbook (Pages 7-8 TOC)
+GRADE_8_TOC_REGISTRY = [
+    # (start_page, end_page, unit_name, chapter_name, lesson_name)
+    (1, 8, "المقدمة والتمهيد", "المقدمة وفهرس المحتويات", "تمهيد وفهرس"),
+    (9, 13, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "افتتاحية الفصل والتهيئة للقراءة"),
+    (14, 22, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "الدرس 1: جهاز الدوران"),
+    (23, 33, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "الدرس 2: المناعة والمرض"),
+    (34, 39, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "استقصاء ومراجعة الفصل"),
+    (40, 43, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 6: الهضم والتنفس والإخراج", "افتتاحية الفصل والتهيئة للقراءة"),
+    (44, 54, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 6: الهضم والتنفس والإخراج", "الدرس 1: الجهاز الهضمي والمواد الغذائية"),
+    (55, 67, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 6: الهضم والتنفس والإخراج", "الدرس 2: جهازا التنفس والإخراج"),
+    (68, 77, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 6: الهضم والتنفس والإخراج", "استقصاء ومراجعة الفصل واختبار مقنن"),
+    (78, 83, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 7: أجهزة الدعامة والحركة والاستجابة", "افتتاحية الفصل والتهيئة للقراءة"),
+    (84, 92, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 7: أجهزة الدعامة والحركة والاستجابة", "الدرس 1: الجلد والعضلات"),
+    (93, 107, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 7: أجهزة الدعامة والحركة والاستجابة", "الدرس 2: الجهاز الهيكلي والجهاز العصبي"),
+    (108, 113, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 7: أجهزة الدعامة والحركة والاستجابة", "استقصاء ومراجعة الفصل"),
+    (114, 117, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "افتتاحية الفصل والتهيئة للقراءة"),
+    (118, 130, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "الدرس 1: جهازا الغدد الصم والتكاثر"),
+    (131, 139, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "الدرس 2: مراحل حياة الإنسان"),
+    (140, 145, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "استقصاء ومراجعة الفصل واختبار مقنن"),
+    (146, 200, "مصادر تعليمية", "مصادر تعليمية ومصطلحات", "مصادر تعليمية ومصطلحات علمية"),
+]
+
+
+def get_chapter_and_unit_by_page(page_number: int) -> tuple[str, str, str]:
     """
-    Builds a page-to-chapter lookup table directly from layout blocks.
-    Tracks 'الفصل' (Chapter) or 'الوحدة' (Unit) titles across pages.
+    Method 1: Authoritative Table of Contents (TOC) page mapping.
+    Maps a page number to its exact official Unit, Chapter, and Lesson titles.
+    Guarantees 100% clean, concise Arabic titles with zero noisy paragraph text.
     """
-    page_chapter_map = {}
-    current_chapter = "الفصل: أجهزة جسم الإنسان"  # Default textbook chapter context
+    for start_p, end_p, unit_title, chapter_title, lesson_title in GRADE_8_TOC_REGISTRY:
+        if start_p <= page_number <= end_p:
+            return unit_title, chapter_title, lesson_title
 
-    sorted_blocks = sorted(blocks, key=lambda b: b.get("pageSpan", {}).get("pageStart", 0))
-
-    for b in sorted_blocks:
-        page_num = b.get("pageSpan", {}).get("pageStart")
-        if not page_num:
-            continue
-
-        text = b.get("textBlock", {}).get("text", "").strip()
-        if not text:
-            continue
-
-        if len(text) < 120:
-            match = re.search(r"((?:الدرس|الفصل|الوحدة)\s*[\d١-٩أ-ي]*[\s:-]*[^\n.]+)", text)
-            if match:
-                clean_title = match.group(1).strip()
-                current_chapter = clean_title
-                page_chapter_map[page_num] = current_chapter
-        elif any(kw in text[:100] for kw in ["جهاز الدوران", "جهاز الهضم", "المناعة", "التنفس"]):
-            current_chapter = text.split("\n")[0].strip()
-            page_chapter_map[page_num] = current_chapter
-    return page_chapter_map
+    # Default fallback if page is outside defined range
+    return "الوحدة 3: أجهزة جسم الإنسان", "الفصل: أجهزة جسم الإنسان", "عام"
 
 
 def extract_english_description(diagram_block: dict) -> str:
@@ -335,9 +342,8 @@ def run_pipeline():
     all_blocks = flatten_layout_blocks(raw_blocks)
     print(f"Total layout blocks extracted (including nested chapters): {len(all_blocks)}")
 
-    # 3. Initialize Page Image Manager & Chapter Index
+    # 3. Initialize Page Image Manager
     page_manager = PageImageManager(doc_data)
-    chapter_index = build_chapter_index(all_blocks)
 
     metadata_records = []
     diagram_count = 0
@@ -381,13 +387,15 @@ def run_pipeline():
         filepath = os.path.join(OUTPUT_IMAGE_DIR, filename)
         diagram_img.save(filepath, format="PNG", optimize=True)
 
-        # 8. Metadata record
-        chapter = chapter_index.get(page_num, "الفصل: أجهزة جسم الإنسان")
+        # 8. Metadata record (Method 1: Authoritative Grade 8 TOC Mapping)
+        unit_title, chapter_title, lesson_title = get_chapter_and_unit_by_page(page_num)
         resolution_str = f"{diagram_img.width}x{diagram_img.height}"
 
-        # 8. Append to metadata list (page_number removed as requested)
+        # Append to metadata list with clean unit, chapter & lesson fields
         record = {
-            "chapter": chapter,
+            "unit": unit_title,
+            "chapter": chapter_title,
+            "lesson": lesson_title,
             "description": description,
             "image_filename": filename,
             "image_path": filepath,
@@ -396,11 +404,12 @@ def run_pipeline():
         metadata_records.append(record)
 
         print(f"  [SAVED] {filename} ({resolution_str})")
+        print(f"          Unit: {unit_title} | Chapter: {chapter_title} | Lesson: {lesson_title}")
         print(f"          Description: {description[:80]}...")
 
     # 9. Save Metadata to CSV with UTF-8 BOM encoding
     print(f"\nWriting metadata CSV to {METADATA_CSV_PATH}...")
-    csv_headers = ["chapter", "description", "image_filename", "image_path", "resolution"]
+    csv_headers = ["unit", "chapter", "lesson", "description", "image_filename", "image_path", "resolution"]
 
     
     # 'utf-8-sig' adds the UTF-8 BOM so Microsoft Excel renders Arabic correctly
