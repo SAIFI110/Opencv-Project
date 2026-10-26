@@ -1,0 +1,589 @@
+﻿unit,chapter,lesson,description,image_filename,image_path,resolution
+المقدمة والتمهيد,المقدمة وفهرس المحتويات,تمهيد وفهرس,"This image is a circular graphic featuring a composite scene. The primary background depicts a desert landscape with rugged, reddish-brown rock formations under a light blue sky. In the foreground, there are three white horses running across this desert terrain.
+
+A portion of the top right of the circle, as well as a section of the bottom right, is covered by a solid dark green background, giving the impression of a layered or folded effect.
+
+In the bottom right corner of the circular graphic, superimposed, is a smaller yellow circle containing a molecular structure. This structure consists of various colored spheres (red, dark grey, light blue) connected by rods, representing a chemical bond model.
+
+**Facts and Conclusions:**
+*   The image is circular in shape.
+*   It combines elements of nature (horses, desert, sky) with a scientific symbol (molecular structure).
+*   There are at least three white horses depicted, running.
+*   The background includes distinct rock formations, suggesting a canyon or mountainous desert environment.
+*   A solid dark green color is used in certain sections, partially obscuring the desert scene.
+*   A chemical molecular structure is prominently displayed in a smaller yellow circle.
+*   The molecular structure has red, dark grey, and light blue spheres connected by rods.
+*   The overall composition suggests a theme that might relate to biology, nature, or a product linking these concepts.",diagram_page_02_diag_01.png,output_diagrams_sem1\diagram_page_02_diag_01.png,514x601
+الوحدة 1: دراسة المادة,الفصل 1: طبيعة العلم,استقصاء ومراجعة الفصل,"This is a conceptual diagram in Arabic about ""علم الآثار"" (Archaeology).
+
+**Facts:**
+
+*   The central concept is ""علم الآثار"" (Archaeology).
+*   ""علم الآثار"" (Archaeology) ""يتضمن"" (includes) three main branches/areas (two of which are blank, and one is labeled ""الدراسات المختبرية"" - Laboratory Studies).
+*   One of the direct branches of ""علم الآثار"" (Archaeology) is ""الدراسات المختبرية"" (Laboratory Studies).
+*   ""الدراسات المختبرية"" (Laboratory Studies) ""تتضمن"" (includes) two sub-branches/activities (both are blank).
+*   One of the direct branches of ""علم الآثار"" (Archaeology) (a blank node) ""تتضمن"" (includes) three sub-branches/activities.
+*   One of these sub-branches of the blank node is ""إجراء المقابلات"" (Conducting Interviews). The other two are blank.
+*   Another direct branch of ""علم الآثار"" (Archaeology) (a blank node) ""تتضمن"" (includes) three sub-branches/activities.
+*   One of these sub-branches of the blank node is ""الحفر"" (Excavation). The other two are blank.
+
+**Conclusions:**
+
+*   The diagram illustrates a hierarchical breakdown of the field of Archaeology.
+*   Archaeology involves both practical, field-based activities (like excavation and interviews) and laboratory-based studies.
+*   The diagram is incomplete, as several nodes representing specific activities or sub-fields are left blank.",diagram_page_32_diag_02.png,output_diagrams_sem1\diagram_page_32_diag_02.png,1348x590
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,الدرس 1: المحاليل والذائبية,"This image shows two young boys, likely in traditional Arabic attire, sitting and eating popsicles. The boy on the left is holding an orange popsicle, and the boy on the right is holding a red one.
+
+A magnified circular inset is overlaid on the image, connected by a yellow line to the red popsicle. This inset illustrates a molecular representation of the popsicle's contents. Inside the circle, there are two distinct types of molecules:
+1.  **Water molecules:** These are represented by smaller red and white (or light blue) structures, and are labeled with the Arabic word ""ماء"" (read as ""ma'"" and meaning ""water"").
+2.  **Sugar molecules:** These are larger, complex structures depicted in blue and red, and are labeled with the Arabic word ""سكر"" (read as ""sukkar"" and meaning ""sugar"").
+
+The arrangement within the magnified circle suggests that the popsicle is a solution, with sugar molecules (solute) dissolved within water molecules (solvent). This effectively illustrates that popsicles are primarily composed of water and sugar.",diagram_page_40_diag_03.png,output_diagrams_sem1\diagram_page_40_diag_03.png,607x377
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,الدرس 1: المحاليل والذائبية,"This is a line graph titled ""الذائبية"" (Solubility), which displays the solubility of four different substances in grams of solute per 100 grams of water (""الذائبية (جم مذاب / ۱۰۰ جم ماء )"") as a function of temperature (""درجة الحرارة ( س )""). The temperature ranges from 0 to 90 degrees Celsius on the x-axis, and the solubility ranges from 0 to 480 gm solute/100 gm water on the y-axis.
+
+The four substances represented by different colored lines are:
+1.  **سكروز** (Sucrose): Represented by a yellow line.
+2.  **كلوريد الصوديوم** (Sodium Chloride): Represented by a blue line.
+3.  **كلوريد البوتاسيوم** (Potassium Chloride): Represented by a green line.
+4.  **كربونات الكالسيوم** (Calcium Carbonate): Represented by a red line.
+
+Here are the facts and conclusions that can be derived from the graph:
+
+**General Trends:**
+*   For **سكروز (Sucrose)**, solubility significantly increases with temperature.
+*   For **كلوريد البوتاسيوم (Potassium Chloride)**, solubility moderately increases with temperature.
+*   For **كلوريد الصوديوم (Sodium Chloride)**, solubility shows a slight increase with temperature, remaining relatively constant.
+*   For **كربونات الكالسيوم (Calcium Carbonate)**, solubility remains very low and relatively constant, showing a negligible increase with temperature.
+
+**Specific Observations at Various Temperatures:**
+
+**At 0°C:**
+*   سكروز (Sucrose) solubility is approximately 170 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 36 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 28 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water (very close to the x-axis).
+
+**At 10°C:**
+*   سكروز (Sucrose) solubility is approximately 180 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 35 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 32 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 20°C:**
+*   سكروز (Sucrose) solubility is approximately 200 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 36 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 35 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 30°C:**
+*   سكروز (Sucrose) solubility is approximately 220 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 37 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 40 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 40°C:**
+*   سكروز (Sucrose) solubility is approximately 240 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 38 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 43 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 50°C:**
+*   سكروز (Sucrose) solubility is approximately 270 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 39 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 46 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 60°C:**
+*   سكروز (Sucrose) solubility is approximately 300 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 40 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 49 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 70°C:**
+*   سكروز (Sucrose) solubility is approximately 340 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 40 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 53 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 80°C:**
+*   سكروز (Sucrose) solubility is approximately 390 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 41 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 58 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**At 90°C:**
+*   سكروز (Sucrose) solubility is approximately 460 gm/100 gm water.
+*   كلوريد الصوديوم (Sodium Chloride) solubility is approximately 42 gm/100 gm water.
+*   كلوريد البوتاسيوم (Potassium Chloride) solubility is approximately 62 gm/100 gm water.
+*   كربونات الكالسيوم (Calcium Carbonate) solubility is approximately 0 gm/100 gm water.
+
+**Comparisons and Relationships:**
+*   **سكروز (Sucrose)** is the most soluble substance over the entire temperature range shown, and its solubility increases most dramatically with temperature. Its solubility at 90°C is more than 2.5 times its solubility at 0°C.
+*   **كلوريد الصوديوم (Sodium Chloride)** has a relatively constant solubility across the temperature range, always staying between approximately 35 and 42 gm/100 gm water.
+*   **كلوريد البوتاسيوم (Potassium Chloride)**'s solubility increases more significantly than Sodium Chloride but less so than Sucrose. At higher temperatures (above approximately 30°C), Potassium Chloride becomes more soluble than Sodium Chloride.
+*   **كربونات الكالسيوم (Calcium Carbonate)** is virtually insoluble in water across the entire temperature range, as indicated by its line staying almost on the x-axis.
+
+**Intersection Points:**
+*   كلوريد البوتاسيوم and كلوريد الصوديوم's solubility curves intersect at approximately 30°C. Below this temperature, Sodium Chloride is slightly more soluble than Potassium Chloride, while above it, Potassium Chloride becomes more soluble.",diagram_page_45_diag_04.png,output_diagrams_sem1\diagram_page_45_diag_04.png,432x381
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,الدرس 2: المحاليل الحمضية والمحاليل القاعدية,"This image illustrates the formation of the hydronium ion (H₃O⁺) from a hydrogen ion (H⁺) and a water molecule (H₂O).
+
+In the upper part of the image, the chemical equation shows:
+H⁺ + H₂O → H₃O⁺
+
+Below the chemical equation, there is a visual representation of the reaction:
+On the left, a blue sphere with a '+' symbol represents a hydrogen ion (H⁺). The Arabic text below it, ""أيون الهيدروجين"", translates to ""hydrogen ion"".
+Next to it, a '+' symbol indicates that it is combining with the next molecule.
+In the middle, a red sphere with two smaller blue spheres attached, representing a water molecule (H₂O). The Arabic text below it, ""جزيء ماء"", translates to ""water molecule"".
+An arrow points to the right, indicating the reaction proceeds to form the product.
+On the right, a red sphere with three smaller blue spheres attached and a '+' symbol represents a hydronium ion (H₃O⁺). The Arabic text below it, ""أيون الهيدرونيوم"", translates to ""hydronium ion"".
+
+From this image, we can conclude:
+1.  A hydrogen ion (H⁺) is positively charged.
+2.  A water molecule (H₂O) is composed of one oxygen atom (represented by the red sphere) and two hydrogen atoms (represented by the blue spheres).
+3.  When a hydrogen ion combines with a water molecule, it forms a hydronium ion.
+4.  The hydronium ion (H₃O⁺) is positively charged and is composed of one oxygen atom and three hydrogen atoms.
+5.  The visual representation uses blue spheres for hydrogen atoms/ions and a red sphere for an oxygen atom.",diagram_page_49_diag_05.png,output_diagrams_sem1\diagram_page_49_diag_05.png,856x301
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,الدرس 2: المحاليل الحمضية والمحاليل القاعدية,"This image displays two beakers, each containing a dissolved acid, illustrating the difference between a strong acid (hydrochloric acid) and a weak acid (ethanoic acid, also known as vinegar).
+
+**Left Beaker: Hydrochloric Acid (حمض الهيدروكلوريك)**
+
+*   The beaker contains water with dissolved hydrochloric acid.
+*   The solution shows a high concentration of free ions.
+*   There are many positively charged ions (blue circles with a '+' sign) labeled as ""Hydronium ion"" (أيون الهيدرونيوم) and many negatively charged ions (yellow circles with a '-' sign) labeled as ""Chloride ion"" (أيون الكلوريد).
+*   The high dissociation into ions indicates that hydrochloric acid is a strong acid, meaning it completely (or almost completely) ionizes in water.
+
+**Right Beaker: Ethanoic Acid / Vinegar (حمض الإيثانويك (الخل))**
+
+*   The beaker contains water with dissolved ethanoic acid (vinegar).
+*   The solution shows a much lower concentration of free ions compared to the hydrochloric acid solution.
+*   There are fewer positively charged ions (purple circles with a '+' sign) labeled as ""Hydronium ion"" (أيون الهيدرونيوم) and fewer negatively charged ions (grey circles with a '-' sign) labeled as ""Acetate ion"" (أيون الخلات).
+*   Crucially, there are also a significant number of un-dissociated molecules (larger purple circles without a charge shown, but implied to be the ethanoic acid molecules) labeled as ""Ethanoic acid"" (حمض الإيثانويك). These molecules are still intact and have not broken down into ions.
+*   The presence of many un-dissociated molecules and fewer free ions indicates that ethanoic acid is a weak acid, meaning it only partially ionizes in water.
+
+**General Conclusions:**
+
+*   The image visually represents the concept of strong vs. weak acids based on their degree of ionization in aqueous solutions.
+*   Strong acids (like HCl) dissociate almost completely into hydronium ions and their conjugate base ions.
+*   Weak acids (like ethanoic acid) dissociate only partially, resulting in a solution with fewer hydronium ions, fewer conjugate base ions, and many un-dissociated acid molecules.
+*   The concentration of hydronium ions is higher in the strong acid solution than in the weak acid solution, assuming similar initial concentrations of both acids.",diagram_page_54_diag_06.png,output_diagrams_sem1\diagram_page_54_diag_06.png,758x423
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,الدرس 2: المحاليل الحمضية والمحاليل القاعدية,"This image is an infographic illustrating pH levels and the corresponding dominant ionic species in aqueous solutions.
+
+Here's a breakdown of the content and conclusions:
+
+**Visual Elements and Labels:**
+
+*   **pH Scale:** The top of the image shows a pH scale ranging from 0 to 14.
+    *   ""صفر pH"" is labeled at the left, indicating pH 0.
+    *   ""7"" is labeled in the middle, indicating neutral pH.
+    *   ""14"" is labeled at the right end of the scale.
+*   **Divided Background:** The main part of the image is divided vertically by a dashed line at pH 7. It also has a diagonal division from the bottom-left to the top-right, creating two distinct color regions (darker blue and lighter blue).
+*   **Chemical Species:**
+    *   **Left Side (pH 0 to 7):**
+        *   ""H₃O⁺"" (Hydronium ion) is prominently displayed in large orange letters on a dark blue background.
+        *   ""OH⁻"" (Hydroxide ion) is displayed in smaller, purple letters on a light blue background in the lower right portion of this section.
+    *   **Right Side (pH 7 to 14):**
+        *   ""H₃O⁺"" (Hydronium ion) is displayed in smaller, orange letters on a dark blue background in the upper left portion of this section.
+        *   ""OH⁻"" (Hydroxide ion) is prominently displayed in large purple letters on a light blue background.
+
+**Inferences and Conclusions:**
+
+1.  **pH Scale:** The image clearly depicts the range of the pH scale from 0 to 14.
+2.  **Acidity and Basicity:**
+    *   **Acidic Solutions (pH 0-7):** On the left side of the pH 7 mark, the H₃O⁺ ion is shown to be significantly more abundant (larger text) than the OH⁻ ion. This indicates that solutions with pH values less than 7 are acidic, meaning they have a higher concentration of hydronium ions.
+    *   **Neutral Solutions (pH 7):** At pH 7, represented by the dashed line, the relative concentrations of H₃O⁺ and OH⁻ can be inferred to be equal, although this isn't explicitly shown with text size, it's the dividing line.
+    *   **Basic/Alkaline Solutions (pH 7-14):** On the right side of the pH 7 mark, the OH⁻ ion is shown to be significantly more abundant (larger text) than the H₃O⁺ ion. This indicates that solutions with pH values greater than 7 are basic or alkaline, meaning they have a higher concentration of hydroxide ions.
+3.  **Inverse Relationship of Ion Concentrations:** As pH increases from 0 to 14:
+    *   The concentration of H₃O⁺ ions decreases (represented by the text size shrinking from left to right).
+    *   The concentration of OH⁻ ions increases (represented by the text size growing from left to right).
+4.  **Dominant Species:**
+    *   In strongly acidic solutions (e.g., pH 0), H₃O⁺ is the dominant ion.
+    *   In strongly basic solutions (e.g., pH 14), OH⁻ is the dominant ion.
+    *   Near neutrality (pH 7), the concentrations are balanced.
+5.  **Visual Representation of Concentration:** The size of the chemical formulas (H₃O⁺ and OH⁻) is used as a visual metaphor for their relative concentrations. Larger text implies a higher concentration, and smaller text implies a lower concentration.",diagram_page_55_diag_07.png,output_diagrams_sem1\diagram_page_55_diag_07.png,1060x532
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,استقصاء ومراجعة الفصل واختبار مقنن,"This image is a line graph titled ""الذائبية"" (Solubility).
+
+**Axes and Labels:**
+*   The x-axis is labeled ""درجة الحرارة (س°)"" (Temperature (°C)) and ranges from 0 to 90 in increments of 10.
+*   The y-axis is labeled ""الذائبية جرام/100 جرام ماء"" (Solubility grams/100 grams water) and ranges from 0 to 140 in increments of 20.
+
+**Data Series (Lines):**
+There are two lines on the graph, representing the solubility of two different substances:
+
+1.  **كلوريد الصوديوم (Sodium Chloride):** This line is blue and remains relatively flat across the temperature range.
+    *   At 0°C, its solubility is approximately 35 grams/100 grams water.
+    *   At 90°C, its solubility is approximately 39 grams/100 grams water.
+    *   Conclusion: The solubility of sodium chloride (كلوريد الصوديوم) shows a slight increase with rising temperature, but it is largely independent of temperature.
+
+2.  **كلوريد البوتاسيوم (Potassium Chloride):** This line is green and shows a clear upward trend.
+    *   At 0°C, its solubility is approximately 28 grams/100 grams water.
+    *   At 90°C, its solubility is approximately 55 grams/100 grams water.
+    *   Conclusion: The solubility of potassium chloride (كلوريد البوتاسيوم) significantly increases as the temperature rises.
+
+**Comparison and Additional Conclusions:**
+*   At temperatures below approximately 25°C, the solubility of sodium chloride (كلوريد الصوديوم) is higher than that of potassium chloride (كلوريد البوتاسيوم).
+*   At approximately 25°C, the solubility of both substances is roughly equal (around 36 grams/100 grams water).
+*   At temperatures above approximately 25°C, the solubility of potassium chloride (كلوريد البوتاسيوم) is higher than that of sodium chloride (كلوريد الصوديوم).
+*   The graph visually demonstrates that potassium chloride is much more affected by temperature changes in terms of its solubility compared to sodium chloride.",diagram_page_62_diag_08.png,output_diagrams_sem1\diagram_page_62_diag_08.png,437x297
+الوحدة 1: دراسة المادة,الفصل 2: المخاليط والمحاليل,استقصاء ومراجعة الفصل واختبار مقنن,"This image is a solubility graph illustrating the relationship between temperature and the solubility of two substances: sugar and potassium chloride. The title of the graph is ""الذائبية"" (Solubility).
+
+**Axes and Labels:**
+*   The x-axis represents ""درجة الحرارة (س°)"" (Temperature (°C)), ranging from 0 to 90 degrees Celsius in increments of 10.
+*   The y-axis represents ""الذائبية جرام / ١٠٠ جرام ماء"" (Solubility grams / 100 grams of water), ranging from 40 to 520 grams in increments of 40 grams.
+
+**Data Series:**
+The graph displays two solubility curves, each representing a different substance:
+
+1.  **Green Curve (سكر - Sugar):** This curve shows the solubility of sugar.
+    *   At 0°C, the solubility of sugar appears to be around 130-140 grams/100g water.
+    *   At 10°C, it's roughly 160 g/100g water.
+    *   At 20°C, it's approximately 180 g/100g water.
+    *   At 30°C, it's about 200 g/100g water.
+    *   At 40°C, it's approximately 240 g/100g water.
+    *   At 50°C, it's roughly 280 g/100g water.
+    *   At 60°C, it's approximately 320 g/100g water.
+    *   At 70°C, it's roughly 360 g/100g water.
+    *   At 80°C, it's approximately 400 g/100g water.
+    *   At 90°C, it's roughly 460 g/100g water.
+
+2.  **Red Curve (كلوريد البوتاسيوم - Potassium Chloride):** This curve shows the solubility of potassium chloride.
+    *   At 0°C, the solubility of potassium chloride appears to be around 28-30 grams/100g water.
+    *   At 10°C, it's roughly 31 g/100g water.
+    *   At 20°C, it's approximately 34 g/100g water.
+    *   At 30°C, it's about 37 g/100g water.
+    *   At 40°C, it's approximately 40 g/100g water.
+    *   At 50°C, it's roughly 42 g/100g water.
+    *   At 60°C, it's approximately 45 g/100g water.
+    *   At 70°C, it's roughly 48 g/100g water.
+    *   At 80°C, it's approximately 50-51 g/100g water.
+    *   At 90°C, it's roughly 53-54 g/100g water.
+
+**Conclusions:**
+*   Both sugar and potassium chloride show an increase in solubility as the temperature of the water increases.
+*   The solubility of sugar increases significantly with temperature, showing a much steeper curve compared to potassium chloride.
+*   Sugar is considerably more soluble in water than potassium chloride across the entire temperature range shown. For example, at 20°C, sugar's solubility is about 180 g/100g water, while potassium chloride's is about 34 g/100g water.
+*   The rate at which solubility increases with temperature is much higher for sugar than for potassium chloride.",diagram_page_63_diag_09.png,output_diagrams_sem1\diagram_page_63_diag_09.png,350x437
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 1: المادة,"This image displays a scientific diagram illustrating the crystal structure of a compound.
+
+**Visual Elements and Arrangement:**
+
+*   The diagram shows a three-dimensional arrangement of spheres, representing atoms or ions, packed together in a crystalline lattice.
+*   Two distinct sizes and colors of spheres are visible:
+    *   Larger, lime-green spheres.
+    *   Smaller, light gray/silver spheres.
+*   A black outlined cube is superimposed on the arrangement, highlighting a unit cell of the crystal structure.
+*   The larger lime-green spheres appear to occupy the corners and face-centered positions of a cube (if we consider the entire visible arrangement), or are located around the smaller spheres.
+*   The smaller light gray/silver spheres appear to be positioned in the octahedral voids created by the larger spheres, or in alternate positions relative to the larger spheres. In the highlighted unit cell, a small sphere is at the center, surrounded by larger spheres at the corners and faces relative to that small sphere. Conversely, if focusing on a large sphere at a corner of the unit cell, it is surrounded by smaller spheres.
+
+**Text Labels:**
+
+*   Two labels in Arabic are present, pointing to the two different types of spheres:
+    *   ""الصوديوم"" (Al-Sawdyoom), meaning ""Sodium,"" points to one of the smaller, light gray/silver spheres.
+    *   ""الكلور"" (Al-Kloor), meaning ""Chlorine,"" points to one of the larger, lime-green spheres.
+
+**Facts and Conclusions:**
+
+1.  **Compound Representation:** The image represents the crystal structure of a chemical compound.
+2.  **Components:** The compound consists of two elements: Sodium (الصوديوم) and Chlorine (الكلور).
+3.  **Ionic Crystal:** Given the common understanding of Sodium Chloride (NaCl) as an ionic compound, it is highly probable that the spheres represent ions rather than neutral atoms.
+4.  **Ionic Size Comparison:** The Chlorine ions (Cl-) are depicted as larger spheres, and the Sodium ions (Na+) are depicted as smaller spheres. This is consistent with the general knowledge that chloride ions are larger than sodium ions (due to Cl- having an extra electron shell compared to Na+).
+5.  **Crystal Lattice Type:** The arrangement of ions, with alternating Na+ and Cl- ions in a regular, repeating pattern, strongly suggests a face-centered cubic (FCC) lattice structure, which is characteristic of the sodium chloride crystal. The highlighted cube represents the unit cell of this structure.
+6.  **Coordination:** Within this structure, each Na+ ion is surrounded by six Cl- ions, and each Cl- ion is surrounded by six Na+ ions, indicating an octahedral coordination for both ions.
+7.  **Stoichiometry:** The visual representation implies a 1:1 ratio between sodium and chlorine ions within the crystal, consistent with the formula NaCl.
+8.  **Chemical Identity:** The image is a representation of the Sodium Chloride (NaCl) crystal, commonly known as table salt.",diagram_page_72_diag_10.png,output_diagrams_sem1\diagram_page_72_diag_10.png,607x457
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 1: المادة,"Here's a description of the image and derived facts:
+
+**Image Description:**
+
+The image displays a three-dimensional, transparent, cubic container. Inside this container, there is a neatly arranged, organized structure composed of multiple identical spherical objects, colored in a solid orange/gold hue. These spheres are packed closely together in a regular, crystalline-like lattice arrangement, forming a cube themselves within the larger transparent container. Each sphere is depicted with small, curved lines around it, suggesting a vibrational or oscillating motion while maintaining its fixed position within the structure.
+
+**Facts and Conclusions Derived from the Image:**
+
+*   **Container:** There is a clear, transparent, cubic container enclosing the arrangement of spheres.
+*   **Contents:** The container holds a collection of spherical particles.
+*   **Particle Appearance:** The particles are uniform in size, spherical in shape, and appear to be solid (indicated by their uniform color and packing). They are depicted in an orange/gold color.
+*   **Arrangement:** The particles are arranged in a highly ordered, tightly packed, three-dimensional structure (a regular lattice). They are not randomly dispersed.
+*   **Proximity:** The particles are very close to each other, with minimal space between them.
+*   **Motion:** The wavy lines around each sphere indicate that the particles are vibrating or oscillating in fixed positions. They are not shown moving freely past one another or translating throughout the container.
+*   **State of Matter (Inferred):** The ordered, tightly packed arrangement and vibrational motion in fixed positions are characteristic properties of a solid state of matter.
+*   **Volume:** The collection of particles occupies a definite volume within the container.
+*   **Shape:** The collection of particles has a definite shape (cubic, in this representation).",diagram_page_72_diag_11.png,output_diagrams_sem1\diagram_page_72_diag_11.png,317x288
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 1: المادة,"This image displays an oval-shaped, dark background with numerous light-colored, mostly translucent crystalline structures scattered across it. These structures appear to be cube-like or square-shaped, with some exhibiting a distinct internal pattern that resembles an 'X' or cross within their faces. There's a variation in their size, with some being larger and more defined, while others are smaller and less distinct. The crystals have a somewhat frosty or icy appearance. The image context, provided by the Arabic header ""حالات المادة"" which translates to ""States of Matter,"" suggests that these crystalline structures are likely representations of a solid state of matter, possibly salt crystals due to their common cubic structure.",diagram_page_72_diag_12.png,output_diagrams_sem1\diagram_page_72_diag_12.png,595x398
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 2: الحرارة وتحولات المادة,"This image displays a round-bottom flask on a stand, containing a substance labelled in Arabic as ""الحالة الغازية: بخار"" which translates to ""Gaseous state: vapor"".
+
+Here are the facts and conclusions that can be derived from the image:
+
+*   **Apparatus:** A round-bottom flask, commonly used in laboratories for heating or mixing reactions, is shown. It is placed on what appears to be a tripod stand with a gauze top, which is typically used to support glassware over a Bunsen burner or other heating source.
+*   **Contents:** The flask contains a substance that is depicted with a cloudy, gaseous-like appearance, occupying the lower portion of the flask but also seeming to fill much of the volume above it.
+*   **Label:** The Arabic text ""الحالة الغازية: بخار"" explicitly identifies the state of matter within the flask as ""Gaseous state"" and the specific form as ""vapor"".
+*   **Implied State of Matter:** Given the label, the image illustrates a substance in its gaseous state, specifically as vapor. The visual representation supports this by showing a less dense, cloud-like substance rather than a distinct liquid or solid.
+*   **Context from surrounding text:** The header ""حالات المادة"" (States of Matter) confirms that this image is part of a series or discussion about the different states of matter. This specific image focuses on the gaseous state.",diagram_page_79_diag_13.png,output_diagrams_sem1\diagram_page_79_diag_13.png,288x428
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 3: سلوك الموائع,"This image shows a person floating in a body of water, which appears to be a sea or large lake, given its calm surface and vastness. The person is lying on their back, with most of their body submerged and their head and part of their legs visible above the water. They are wearing dark-colored bottoms, possibly swim trunks.
+
+Overlaying the water is text in Arabic and two arrows. A red downward-pointing arrow is labeled with the Arabic word ""الوزن"" (Al-Wazn), which translates to ""weight."" A blue upward-pointing arrow is labeled with the Arabic phrase ""قوة الطفو"" (Quwat al-Tufuw), which means ""buoyancy force"" or ""force of buoyancy.""
+
+These labels and arrows illustrate the physical forces acting on the floating person:
+1.  **Weight (الوزن)**: Represented by the red downward arrow, this force acts downwards due to gravity, pulling the person into the water.
+2.  **Buoyancy Force (قوة الطفو)**: Represented by the blue upward arrow, this force acts upwards, counteracting the weight and supporting the person in the water.
+
+The fact that the person is floating effortlessly suggests that the upward buoyancy force is equal to or greater than the downward force of their weight. This common phenomenon is particularly noticeable in bodies of water with high salinity, such as the Dead Sea, where the increased density of the water provides greater buoyancy.
+
+From the context of the surrounding document's title ""# سلوك الموائع"" (Behavior of Fluids), the image is clearly demonstrating the principle of buoyancy in fluids.",diagram_page_88_diag_14.png,output_diagrams_sem1\diagram_page_88_diag_14.png,813x613
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 3: سلوك الموائع,"This image displays a scientific diagram illustrating the kinetic theory of gases or particles within a container, comparing two states—likely before and after heating, or at different temperatures.
+
+Here are the facts and conclusions that can be derived from the image:
+
+*   **Two Flasks:** There are two identical flask-shaped glass containers, each with a stopper, depicted side-by-side.
+*   **Magnified Views of Particle Behavior:** Above each flask, there is a magnified circular inset showing the microscopic behavior of particles inside the flask.
+*   **Particles within Flasks:** Both magnified views show numerous small, purple, spherical particles and slightly larger, segmented, light-blue cylindrical particles.
+*   **Particle Motion Representation:** The particles are depicted with faint streaks behind them, indicating motion.
+*   **Left Flask (State 1):**
+    *   The magnified view above the left flask shows particles moving.
+    *   There is one instance of collision or high-energy interaction depicted by a yellow starburst around a purple and a light-blue particle.
+    *   The overall motion appears less energetic compared to the right flask, suggested by fewer and smaller streaks, and only one collision.
+*   **Right Flask (State 2):**
+    *   The right flask has an external heat source (a flame from a burner) placed underneath it, indicated by a blurry, orange-red glow.
+    *   The magnified view above the right flask shows particles moving more rapidly.
+    *   There are multiple instances of collisions or high-energy interactions (three are clearly visible) depicted by yellow starbursts around colliding particles.
+    *   The streaks behind the particles appear more pronounced and longer, suggesting increased speed and energy.
+*   **Conclusion on Heat and Particle Motion:** The image strongly suggests that applying heat to the flask (right side) leads to increased kinetic energy of the particles inside, resulting in faster movement and more frequent/energetic collisions. This is a visual representation of the concept that temperature is related to the average kinetic energy of particles.
+*   **Arabic Text:** The Arabic word ""الماء"" (Al-Ma' / Water) is partially visible at the bottom right. This suggests the fluid being observed might be water, or the experiment is related to the properties of water. The header ""سلوك الموائع"" (Suluk Al-Mawa'i' / Behavior of Fluids) further supports this context, indicating that the diagram illustrates principles related to fluid behavior.",diagram_page_88_diag_15.png,output_diagrams_sem1\diagram_page_88_diag_15.png,568x479
+الوحدة 2: المادة والطاقة,الفصل 3: حالات المادة,الدرس 3: سلوك الموائع,"This image is a diagram illustrating the human heart and the flow of blood through it, accompanied by labels in Arabic.
+
+**Blood Flow Description:**
+
+The diagram shows a simplified representation of the heart with different chambers and major blood vessels. Arrows indicate the direction of blood flow.
+
+Based on the labels:
+*   **الدم من الجسم (Blood from the body):** An arrow points into the right side of the heart, indicating that deoxygenated blood from the body enters here.
+*   **الدم إلى الرئتين (Blood to the lungs):** An arrow points from the right side of the heart towards the top, indicating that deoxygenated blood is pumped to the lungs.
+*   **دم من الرئتين (Blood from the lungs):** An arrow points into the left side of the heart, indicating that oxygenated blood from the lungs enters here.
+*   **الدم إلى الجسم (Blood to the body):** An arrow points from the left side of the heart towards the top and then arches, indicating that oxygenated blood is pumped to the rest of the body.
+
+**Conclusions from the Diagram:**
+
+1.  The heart is responsible for circulating blood throughout the body.
+2.  Blood from the body enters the right side of the heart.
+3.  The right side of the heart pumps blood to the lungs.
+4.  Blood from the lungs enters the left side of the heart.
+5.  The left side of the heart pumps blood to the rest of the body.
+6.  The diagram depicts the two separate circulatory pathways: pulmonary circulation (heart to lungs and back) and systemic circulation (heart to body and back).
+7.  The blue-colored chambers and vessels on the right side of the heart typically represent deoxygenated blood, while the red/orange-colored chambers and vessels on the left side represent oxygenated blood.
+8.  The diagram shows the four chambers of the heart (two atria and two ventricles), though they are not explicitly labeled.",diagram_page_91_diag_16.png,output_diagrams_sem1\diagram_page_91_diag_16.png,612x525
+الوحدة 2: المادة والطاقة,الفصل 4: الطاقة وتحولاتها,افتتاحية الفصل والتهيئة للقراءة,"This image displays a line graph illustrating ""تبخر الماء"" (Water Evaporation) as a function of ""الزمن (دقيقة)"" (Time (minutes)).
+
+The y-axis, labeled ""درجة الحرارة °س"" (Temperature °C), ranges from 40 to 130 degrees Celsius. The major tick marks are at 40, 100, and 130 °C, with an inferred interval of 20°C between the major ticks from 40 to 100°C.
+
+The x-axis, labeled ""الزمن (دقيقة)"" (Time (minutes)), ranges from 0 to 12 minutes, with tick marks at every minute from 1 to 12.
+
+The red line on the graph shows the following data points:
+*   At 0 minutes, the temperature is 40 °C.
+*   From 0 to 1 minute, the temperature increases from 40 °C to an inferred 80 °C (midway between 40 and 100 °C, assuming a consistent scale).
+*   From 1 to 2 minutes, the temperature remains constant at 80 °C.
+*   From 2 to 4 minutes, the temperature increases from 80 °C to 100 °C.
+*   From 4 to 11 minutes, the temperature remains constant at 100 °C.
+*   From 11 to 12 minutes, the temperature increases from 100 °C to 130 °C.
+
+**Conclusions from the graph:**
+*   The heating process starts at 40 °C.
+*   There are two distinct plateaus where the temperature remains constant despite the passage of time:
+    *   One plateau occurs between 1 and 2 minutes at an inferred 80 °C. This might represent a phase transition, but without more context or precise labels for this temperature, it's difficult to be certain. Given the title ""Water Evaporation"", it is unusual to see a plateau at 80°C. However, it's visually present in the graph.
+    *   The second and more significant plateau occurs between 4 and 11 minutes at 100 °C. This temperature is the boiling point of water at standard atmospheric pressure, indicating that during this period, the water is undergoing a phase change from liquid to gas (evaporation/boiling).
+*   After the boiling point plateau (100 °C), the temperature continues to rise to 130 °C, suggesting that either the water is superheated or the substance being heated is no longer solely liquid water, or the pressure is increasing.
+*   The rate of temperature increase is not constant across all rising segments.
+    *   From 0 to 1 minute, the temperature increases by approximately 40 °C (from 40 to 80 °C).
+    *   From 2 to 4 minutes, the temperature increases by approximately 20 °C (from 80 to 100 °C) over 2 minutes, which is an average rate of 10 °C/minute.
+    *   From 11 to 12 minutes, the temperature increases by 30 °C (from 100 to 130 °C).",diagram_page_98_diag_17.png,output_diagrams_sem1\diagram_page_98_diag_17.png,525x359
+الوحدة 2: المادة والطاقة,الفصل 4: الطاقة وتحولاتها,الدرس 2: تحولات الطاقة,"This image illustrates the concepts of potential energy (طاقة وضع) and kinetic energy (طاقة حركية) in Arabic, using a boy and a tennis ball as an example.
+
+**Based on the image, the following facts and conclusions can be derived:**
+
+*   **A boy is shown in the image.** He is looking upwards and appears to be interacting with a tennis ball.
+*   **A tennis ball is depicted above the boy's hand.**
+*   **The ball at its highest point is labeled ""طاقة وضع"" (potential energy).** This indicates that at the peak of its trajectory, the ball possesses maximum potential energy.
+*   **An upward pointing arrow between the boy's hand and the ball is labeled ""طاقة حركية"" (kinetic energy).** This represents the kinetic energy of the ball as it moves upwards after being thrown or tossed. As the ball moves up, its kinetic energy is being converted into potential energy.
+*   **A downward pointing arrow below the boy's other hand is also labeled ""طاقة حركية"" (kinetic energy).** This represents the kinetic energy of the ball as it moves downwards. As the ball falls, its potential energy is being converted back into kinetic energy.
+
+**Overall, the image demonstrates the transformation between potential and kinetic energy as an object (a ball) is thrown upwards and then falls back down.** At the highest point, potential energy is at its maximum, and as it moves up or down, kinetic energy is present, showing the conversion between the two forms of energy.",diagram_page_109_diag_18.png,output_diagrams_sem1\diagram_page_109_diag_18.png,776x785
+الوحدة 2: المادة والطاقة,الفصل 4: الطاقة وتحولاتها,الدرس 2: تحولات الطاقة,"This diagram illustrates how a turbine and a generator work together to produce electricity, likely in the context of converting chemical energy into kinetic energy as per the surrounding document's title.
+
+Here are the facts and conclusions derived from the image:
+
+*   **Turbine Operation:**
+    *   The diagram shows a turbine on the right, labeled ""التوربين"" (The Turbine).
+    *   Steam, water, or wind (""البخار أو الماء أو الرياح"") flows at high speed (""بسرعة"") between the blades of the turbine (""بين شفرات مراوح التوربين"").
+    *   This flow causes the turbine blades to rotate (""مما يؤدي إلى دورانها"").
+    *   The turbine blades are connected to a rotatable shaft (""توصل شفرات مراوح التوربين إلى عمود قابل للدوران"").
+    *   When the turbine blades rotate, this shaft also rotates (""وعند دورانها يدور العمود"").
+    *   Arrows within the turbine indicate the direction of steam/water/wind flow (blue arrows) and the rotation of the turbine stages (curved blue arrows). The input appears to be from the right (red section) and exits to the left (yellow section).
+
+*   **Generator Operation:**
+    *   The rotatable shaft from the turbine is connected to an electric generator (""يوصل العمود القابل للدوران إلى مولد كهربائي"").
+    *   The generator is labeled ""المولد"" (The Generator).
+    *   A simple electric generator consists of a coil of wires (""ملف من الأسلاك"") that rotates in a magnetic field (""التي تدور في مجال مغناطيسي"").
+    *   The diagram shows a magnetic field (""مغناطیس"") surrounding the coil inside the generator.
+    *   As the coil rotates within the magnetic field, electric current flows (""يتدفق التيار الكهربائي من الملف عبر الأسلاك الكهربائية"").
+    *   Red arrows inside the generator illustrate the movement of the rotating part (coil) and the magnetic field lines or flux interaction, leading to current generation.
+    *   An output wire (red and black) extends from the generator, indicating the flow of electricity.
+
+*   **Energy Conversion Process:**
+    *   The overall process depicted is the conversion of kinetic energy (from steam, water, or wind moving the turbine) into mechanical energy (rotation of the shaft), and then into electrical energy (generated by the dynamo).
+    *   The turbine acts as the primary mover, converting the energy of the fluid/wind into rotational motion.
+    *   The generator then converts this rotational mechanical energy into electrical energy.",diagram_page_113_diag_19.png,output_diagrams_sem1\diagram_page_113_diag_19.png,1360x680
+الوحدة 2: المادة والطاقة,الفصل 4: الطاقة وتحولاتها,الدرس 2: تحولات الطاقة,"This image is a diagram illustrating the transformation of chemical energy into kinetic energy, specifically depicting a power generation process using natural gas or oil.
+
+Here's an analysis of the diagram:
+
+**Components:**
+
+*   **غاز طبيعي (Natural Gas):** This is the initial energy source, shown entering a large pipe.
+*   **الطاقة الكيميائية في الغاز الطبيعي أو النفط (Chemical Energy in Natural Gas or Oil):** This label indicates the type of energy stored in the fuel source.
+*   **المرجل (Boiler):** A large orange structure where the natural gas is burned.
+*   **أنبوب البخار (Steam Pipe):** A pipe carrying steam from the boiler.
+*   **الطاقة الحرارية في الماء (Thermal Energy in Water):** This label indicates that the boiler converts the chemical energy into thermal energy transferred to water.
+*   **الطاقة الحركية في البخار (Kinetic Energy in Steam):** This label indicates that the thermal energy in water is converted into kinetic energy of steam.
+*   **التوربين (Turbine):** A device, shown in yellow with multiple blades, that is spun by the steam. There are two labels for ""التوربين"", one directly pointing to the component and another referring to the kinetic energy within it.
+*   **الطاقة الحركية في التوربين (Kinetic Energy in the Turbine):** This label indicates that the kinetic energy of the steam is transferred to the turbine, causing it to rotate.
+*   **المولد (Generator):** A device, shown in grey and yellow, connected to the turbine.
+*   **الطاقة الكهربائية الخارجة من المولد (Electrical Energy Output from the Generator):** This label indicates the final energy output produced by the generator.
+*   **المدخنة (Smokestack):** A tall grey chimney for exhausting combustion byproducts.
+
+**Energy Transformation Process:**
+
+1.  **Chemical Energy to Thermal Energy:** Natural gas (or oil) with its ""الطاقة الكيميائية في الغاز الطبيعي أو النفط"" (Chemical Energy in Natural Gas or Oil) is fed into the ""المرجل"" (Boiler).
+2.  **Thermal Energy to Kinetic Energy (Steam):** Inside the boiler, the chemical energy is released through combustion, heating water and converting it into high-pressure steam. This is indicated by ""الطاقة الحرارية في الماء"" (Thermal Energy in Water) transforming into ""الطاقة الحركية في البخار"" (Kinetic Energy in Steam).
+3.  **Kinetic Energy (Steam) to Kinetic Energy (Turbine):** The high-pressure steam travels through the ""أنبوب البخار"" (Steam Pipe) and expands, impinging on the blades of the ""التوربين"" (Turbine), causing it to rotate. This converts ""الطاقة الحركية في البخار"" (Kinetic Energy in Steam) into ""الطاقة الحركية في التوربين"" (Kinetic Energy in the Turbine).
+4.  **Kinetic Energy (Turbine) to Electrical Energy:** The rotating ""التوربين"" (Turbine) is mechanically connected to the ""المولد"" (Generator). The generator converts the kinetic energy of the rotating turbine into ""الطاقة الكهربائية الخارجة من المولد"" (Electrical Energy Output from the Generator).
+5.  **Exhaust:** Byproducts of combustion are released through the ""المدخنة"" (Smokestack).
+6.  **Water Circulation:** Water used to produce steam is likely condensed and returned to the boiler, although the full cooling loop is not explicitly detailed but implied by the presence of water pipes underneath.
+
+**Conclusion:**
+
+The diagram illustrates a power plant that generates electricity by burning natural gas or oil to heat water, produce steam, which then drives a turbine connected to an electrical generator. The process follows a clear energy transformation chain: Chemical Energy → Thermal Energy → Kinetic Energy (steam) → Kinetic Energy (turbine) → Electrical Energy.",diagram_page_114_diag_20.png,output_diagrams_sem1\diagram_page_114_diag_20.png,951x672
+الوحدة 2: المادة والطاقة,الفصل 4: الطاقة وتحولاتها,استقصاء ومراجعة الفصل واختبار مقنن,"This image is a pie chart illustrating different energy sources and their percentages. The chart is labeled in Arabic.
+
+Here are the details from the pie chart:
+
+*   **الفحم الحجري** (Coal) accounts for **41.4%**.
+*   **غاز طبيعي** (Natural gas) accounts for **21.3%**.
+*   **المائية** (Hydroelectric) accounts for **15.4%**.
+*   **النووية** (Nuclear) accounts for **12.2%**.
+*   **أخرى** (Other) accounts for **9.4%**.
+
+From this, the following observations can be made:
+*   Coal is the largest energy source, representing nearly half of the total depicted.
+*   Natural gas is the second-largest energy source.
+*   Hydroelectric and Nuclear energy sources together contribute more than natural gas individually.
+*   ""Other"" sources constitute the smallest portion of the energy mix shown.",diagram_page_124_diag_21.png,output_diagrams_sem1\diagram_page_124_diag_21.png,390x370
+مصادر تعليمية,مصادر تعليمية ومصطلحات,مصادر تعليمية ومصطلحات علمية,"This image displays a 2D line graph. The x-axis (horizontal) represents a quantity with values ranging from 0 to 40, in increments of 5 (e.g., 0, 5, 10, 15, 20, 25, 30, 35, 40). The y-axis (vertical) is labeled ""طاقة الوضع (جول)"" which translates to ""Potential Energy (Joules)"", and its values range from 0 to 15, in increments of 5 (e.g., 0, 5, 10, 15).
+
+The graph shows a single red parabolic curve that starts at (0,0), rises to a peak, and then decreases back to 0.
+
+Here are the facts and conclusions that can be derived from the graph:
+*   The x-axis represents values from 0 to 40.
+*   The y-axis represents ""Potential Energy (Joules)"" and ranges from 0 to 15.
+*   The curve starts at a potential energy of 0 Joules when the x-axis value is 0.
+*   The potential energy increases as the x-axis value increases from 0.
+*   The potential energy reaches its maximum value of approximately 15 Joules when the x-axis value is around 19-20 (it appears to peak just before the 20 mark on the x-axis, potentially at 19).
+*   After reaching its peak, the potential energy decreases as the x-axis value continues to increase.
+*   The curve ends at a potential energy of 0 Joules when the x-axis value is 40.
+*   The shape of the graph is parabolic, suggesting a quadratic relationship between the potential energy and the quantity represented on the x-axis. This relationship is symmetrical around the peak.",diagram_page_126_diag_22.png,output_diagrams_sem1\diagram_page_126_diag_22.png,497x437
+مصادر تعليمية,مصادر تعليمية ومصطلحات,مصادر تعليمية ومصطلحات علمية,"This image is a diagram illustrating the basic structure of an atom, with Arabic labels.
+
+Here are the facts and conclusions that can be derived from the image:
+
+*   **Overall Atom Structure**: The image shows a central, dense region (the nucleus) and smaller particles (electrons) orbiting it in distinct shells or energy levels, represented by concentric blue blurred circles.
+*   **Nucleus (النواة)**:
+    *   A magnified view of the nucleus is shown, indicating it is composed of two types of particles.
+    *   The nucleus contains particles labeled as ""نيوترون"" (neutron) and ""بروتون"" (proton).
+    *   **Protons**: Represented by orange spheres with a ""+"" sign, indicating they carry a positive electrical charge.
+    *   **Neutrons**: Represented by blue spheres without any charge indication, implying they are electrically neutral.
+    *   There appear to be 7 protons (orange spheres with '+') and 7 neutrons (blue spheres) depicted within the nucleus.
+*   **Electrons (إلكترونات)**:
+    *   These are represented by small red dots.
+    *   They are shown orbiting the nucleus in distinct energy levels/shells, implied by the concentric blue rings.
+    *   There are 7 electrons depicted in orbit around the nucleus.
+*   **Charge Distribution**: The atom as a whole appears to be electrically neutral, as there are 7 positively charged protons and 7 negatively charged electrons (although the negative sign for electrons is not explicitly shown, it is implied by their role in balancing the protons' charge).
+*   **Scale**: The diagram visually emphasizes that the nucleus is very small compared to the overall size of the atom and the electron orbits.",diagram_page_129_diag_23.png,output_diagrams_sem1\diagram_page_129_diag_23.png,568x607
+مصادر تعليمية,مصادر تعليمية ومصطلحات,مصادر تعليمية ومصطلحات علمية,"This is a concept map illustrating the classification of matter and its states.
+
+Here's a breakdown of the information presented:
+
+**Main Concept:**
+*   **المادة (Matter)**: The central concept.
+
+**Classification:**
+*   Matter is classified into (تصنف إلى) four main states:
+    1.  **صلب (Solid)**
+    2.  **سائل (Liquid)**
+    3.  **غاز (Gas)**
+    4.  **بلازما (Plasma)**
+
+**Properties of Each State:**
+
+*   **صلب (Solid)**:
+    *   له (has) شكل محدد (definite shape)
+    *   له (has) حجم محدد (definite volume)
+
+*   **سائل (Liquid)**:
+    *   ليس له (does not have) شكل محدد (definite shape)
+    *   له (has) حجم محدد (definite volume)
+
+*   **غاز (Gas)**:
+    *   ليس له (does not have) شكل محدد (definite shape)
+    *   ليس له (does not have) حجم محدد (definite volume)
+
+*   **بلازما (Plasma)**:
+    *   موجود في (found in) النجوم (stars)
+
+**Summary of Properties:**
+
+| State   | Definite Shape | Definite Volume |
+| :------ | :------------- | :-------------- |
+| Solid   | Yes            | Yes             |
+| Liquid  | No             | Yes             |
+| Gas     | No             | No              |
+| Plasma  | N/A            | N/A             |
+
+**Conclusion:** The diagram visually categorizes matter into its four primary states and outlines distinguishing characteristics, specifically regarding shape and volume, for solids, liquids, and gases, while also indicating a natural occurrence for plasma.",diagram_page_129_diag_24.png,output_diagrams_sem1\diagram_page_129_diag_24.png,652x519
+مصادر تعليمية,مصادر تعليمية ومصطلحات,مصادر تعليمية ومصطلحات علمية,"This image is a flowchart illustrating the sequence of events that lead to hearing an echo. The chart consists of five yellow, oval-shaped nodes, each containing a phrase in Arabic, connected by downward-pointing arrows.
+
+Here's a breakdown of the content and the derived facts:
+
+*   **Node 1 (Top):** ""ينتج الصوت"" (Sound is produced)
+    *   **Fact:** The process begins with the production of sound.
+
+*   **Node 2:** ""ينتقل الصوت"" (Sound travels)
+    *   **Fact:** After being produced, the sound travels. The arrow indicates a direct progression from sound production to sound traveling.
+
+*   **Node 3:** ""يصطدم الصوت بسطح صلب"" (Sound collides with a solid surface)
+    *   **Fact:** As sound travels, it eventually encounters and collides with a solid surface. This is a necessary step in the sequence.
+
+*   **Node 4:** ""ينعكس الصوت"" (Sound reflects)
+    *   **Fact:** Upon colliding with a solid surface, the sound reflects. This step logically follows the sound hitting a surface.
+
+*   **Node 5 (Bottom):** ""يُسْمَعُ الصدى"" (The echo is heard)
+    *   **Fact:** The final outcome of this sequence of events is that the echo is heard.
+
+**Conclusions derived from the flowchart:**
+
+1.  The chart describes the physical process of how an echo is formed and heard.
+2.  The formation of an echo is a sequential process starting with sound production and ending with hearing the echo.
+3.  Sound needs to be produced and travel to some location.
+4.  A solid surface is essential for the reflection of sound, which is a critical step in echo formation.
+5.  The reflection of sound is what leads to the perception of an echo.
+
+The flowchart clearly outlines the steps for ""تحولات الطاقة الكيميائية إلى طاقة حركية"" (Transformation of chemical energy to kinetic energy), although the content of the flowchart itself specifically details the process of echo formation rather than directly illustrating chemical to kinetic energy transformation. It's possible the image is meant to be an example or a related concept within a broader discussion about energy transformations, but the chart's content is solely about sound and echoes.",diagram_page_130_diag_25.png,output_diagrams_sem1\diagram_page_130_diag_25.png,364x873
+مصادر تعليمية,مصادر تعليمية ومصطلحات,مصادر تعليمية ومصطلحات علمية,"This is a Venn diagram illustrating the characteristic atomic arrangements of diamond and graphite, and their common element.
+
+Here's a breakdown of the diagram:
+
+*   **Left Circle (Blue): Diamond (ألماس)**
+    *   Description: ""تترتب الذرات على شكل بلورات مكعبة"" (Atoms are arranged in cubic crystals). This indicates that diamonds have a crystal structure where carbon atoms are arranged in a cubic lattice.
+
+*   **Right Circle (Yellow): Graphite (الجرافيت)**
+    *   Description: ""تترتب الذرات في طبقات"" (Atoms are arranged in layers). This indicates that graphite has a crystal structure where carbon atoms are arranged in hexagonal layers.
+
+*   **Intersection (Green): Commonality**
+    *   Below the intersection, an arrow points to the word ""كربون"" (Carbon). This signifies that both diamond and graphite are allotropes of carbon, meaning they are different structural forms of the same element.
+
+In summary, the Venn diagram shows that both diamond and graphite are composed of carbon, but they differ in their atomic arrangements: diamond has a cubic crystal structure, while graphite has a layered structure.",diagram_page_131_diag_26.png,output_diagrams_sem1\diagram_page_131_diag_26.png,621x301
