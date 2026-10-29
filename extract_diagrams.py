@@ -303,7 +303,6 @@ Analyze the image description and decide if it should be KEPT for student learni
 
 RULES:
 1. REJECT (should_keep = false):
-   - QR codes, barcodes, scan patterns (is_qr_code = true).
    - Ministry logos, book covers, decorative icons, badges.
    - Real-world photographs of random food/fruits/meals.
 
@@ -314,7 +313,6 @@ RULES:
 Respond ONLY with valid JSON:
 {
   "should_keep": true/false,
-  "is_qr_code": true/false,
   "reason": "Short explanation of your decision"
 }
 """
