@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدرس 2: جهازا التنفس والإخراج - Science Worksheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --q-short-bg: #f0fdf4;
+            --q-short-border: #86efac;
+            --q-mcq-bg: #eff6ff;
+            --q-mcq-border: #93c5fd;
+            --q-reason-bg: #fffbeb;
+            --q-reason-border: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container { max-width: 1240px; margin: 0 auto; }
+
+        /* Top Header Banner: ONLY LESSON NAME */
+        .lesson-banner {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18);
+        }
+
+        .lesson-header-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lesson-main-title {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lesson-sub {
+            font-size: 13.5px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: #ffffff;
+            color: #1e3a8a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        /* Diagram Card */
+        .diagram-eval-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            page-break-inside: avoid;
+        }
+
+        /* Side-by-Side: Left Image, Right Questions */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Image Box - Clean & Distinct */
+        .image-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            max-height: 480px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-meta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .image-meta strong { color: #1e3a8a; }
+
+        /* Right Column: Questions Stack */
+        .questions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shared Question Box */
+        .q-box {
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .q-type-badge {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-tag {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .q-prompt {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* 1. Short Question Box */
+        .box-short {
+            background: var(--q-short-bg);
+            border: 1.5px solid var(--q-short-border);
+        }
+        .box-short .q-type-badge { color: #15803d; }
+
+        /* 2. MCQ Box */
+        .box-mcq {
+            background: var(--q-mcq-bg);
+            border: 1.5px solid var(--q-mcq-border);
+        }
+        .box-mcq .q-type-badge { color: #1d4ed8; }
+
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .mcq-option {
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        .mcq-option.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #14532d;
+            font-weight: 700;
+        }
+
+        /* 3. Reasoning Box */
+        .box-reasoning {
+            background: var(--q-reason-bg);
+            border: 1.5px solid var(--q-reason-border);
+        }
+        .box-reasoning .q-type-badge { color: #b45309; }
+
+        /* Answers Styling */
+        .answer-block {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #334155;
+            border-left: 4px solid #22c55e;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .answer-block strong { color: #14532d; }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 980px) {
+            .card-grid { grid-template-columns: 1fr; }
+            .mcq-options-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PRINT STYLES FOR CLEAN PDF GENERATION */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .lesson-banner {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-radius: 0;
+                margin-bottom: 15px;
+            }
+            .diagram-eval-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .card-grid { grid-template-columns: 380px 1fr !important; }
+            .box-short { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-mcq { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-reasoning { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="lesson-banner">
+        <div class="lesson-header-text">
+            <h1 class="lesson-main-title">📖 الدرس: الدرس 2: جهازا التنفس والإخراج</h1>
+            <div class="lesson-sub">Grade 8 - Semester 2 Science &bull; 8 Scientific Diagram(s)</div>
+        </div>
+        <div class="header-actions no-print">
+            <a href="index.html" class="btn-action">📂 All Lessons</a>
+            <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </header>
+
+    <div class="worksheet-cards">
+        
+        <!-- Diagram #1 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_56_diag_15.png" alt="diagram_page_56_diag_15.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #1</strong> &bull; diagram_page_56_diag_15.png</span>
+                        <span>1060x497</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the process called when oxygen enters the body?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> Inhalation (شهيق)
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What happens to oxygen after it enters the lungs according to the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> It moves to the cells. ✓</div><div class="mcq-option"><strong>(B)</strong> It is exhaled immediately.</div><div class="mcq-option"><strong>(C)</strong> It is converted to carbon dioxide.</div><div class="mcq-option"><strong>(D)</strong> It is stored in the lungs.</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The diagram shows that oxygen moves from the lungs to the cells via the circulatory system.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the circulatory system is involved in the process of respiration.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The circulatory system transports oxygen from the lungs to the body's cells using red blood cells. After inhalation, oxygen enters the lungs and is picked up by red blood cells, which then carry it to the cells throughout the body. This process is essential for cellular respiration, where oxygen is used to produce energy.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #2 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_57_diag_16.png" alt="diagram_page_57_diag_16.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #2</strong> &bull; diagram_page_57_diag_16.png</span>
+                        <span>741x469</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the primary function of the alveoli in the respiratory system?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The primary function of the alveoli is to facilitate gas exchange, allowing oxygen to enter the blood and carbon dioxide to be expelled.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What is the approximate number of alveoli in each lung?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> 300 million ✓</div><div class="mcq-option"><strong>(B)</strong> 150 million</div><div class="mcq-option"><strong>(C)</strong> 600 million</div><div class="mcq-option"><strong>(D)</strong> 1 billion</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The diagram states that there are approximately 300 million alveoli in each lung, which is crucial for efficient gas exchange.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the structure of the alveoli aids in gas exchange.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The alveoli are tiny air sacs with thin walls that provide a large surface area for gas exchange. Their proximity to capillaries allows oxygen to diffuse into the blood while carbon dioxide diffuses out, making the process efficient.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #3 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_58_diag_17.png" alt="diagram_page_58_diag_17.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #3</strong> &bull; diagram_page_58_diag_17.png</span>
+                        <span>621x776</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the primary function of the alveolus in the respiratory system?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The primary function of the alveolus is to facilitate gas exchange, allowing oxygen to enter the blood and carbon dioxide to be expelled from it.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What gas is indicated by the arrow moving from the alveolus into the capillary?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Oxygen (O2) ✓</div><div class="mcq-option"><strong>(B)</strong> Carbon Dioxide (CO2)</div><div class="mcq-option"><strong>(C)</strong> Nitrogen (N2)</div><div class="mcq-option"><strong>(D)</strong> Hydrogen (H2)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The arrow pointing from the alveolus into the capillary indicates the movement of oxygen (O2), which is taken up by the red blood cells.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the structure of the alveolus is adapted for gas exchange.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The alveolus has a large surface area and is surrounded by capillaries, which allows for efficient gas exchange. Its thin walls facilitate the diffusion of oxygen into the blood and carbon dioxide out of the blood. The presence of numerous alveoli increases the overall surface area for gas exchange in the lungs.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #4 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_59_diag_18.png" alt="diagram_page_59_diag_18.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #4</strong> &bull; diagram_page_59_diag_18.png</span>
+                        <span>426x459</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the role of the diaphragm during inhalation?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The diaphragm contracts and moves downward, increasing the thoracic cavity volume and allowing air to enter the lungs.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which structure is indicated by the downward-pointing blue arrow that shows air entering the body?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Trachea ✓</div><div class="mcq-option"><strong>(B)</strong> Lungs</div><div class="mcq-option"><strong>(C)</strong> Diaphragm</div><div class="mcq-option"><strong>(D)</strong> Rib cage</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The trachea is the airway that allows air to enter the lungs, as indicated by the downward-pointing blue arrow in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the diaphragm contributes to the process of inhalation.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> During inhalation, the diaphragm contracts and moves downward, which increases the volume of the thoracic cavity. This decrease in pressure allows air to flow into the lungs from the atmosphere, facilitating the exchange of gases necessary for respiration.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #5 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_59_diag_19.png" alt="diagram_page_59_diag_19.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #5</strong> &bull; diagram_page_59_diag_19.png</span>
+                        <span>395x461</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the Arabic term for exhalation as shown in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> زفير (zafir)
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What happens to the diaphragm during exhalation?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> It moves upwards. ✓</div><div class="mcq-option"><strong>(B)</strong> It moves downwards.</div><div class="mcq-option"><strong>(C)</strong> It remains stationary.</div><div class="mcq-option"><strong>(D)</strong> It expands outward.</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; During exhalation, the diaphragm moves upwards, which helps push air out of the lungs.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the process of exhalation occurs in the human body.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Exhalation occurs when the diaphragm contracts and moves upwards, reducing the volume of the chest cavity. This decrease in volume increases the pressure inside the lungs, causing air to flow out of the lungs and through the trachea. The contraction of the lungs, indicated by the arrows in the diagram, also aids in pushing air out, resulting in the expulsion of carbon dioxide from the body.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #6 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_62_diag_20.png" alt="diagram_page_62_diag_20.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #6</strong> &bull; diagram_page_62_diag_20.png</span>
+                        <span>531x717</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the function of the kidneys in the human body?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The kidneys filter waste products from the blood and produce urine.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which organ is labeled as 'الحنجرة' in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Larynx ✓</div><div class="mcq-option"><strong>(B)</strong> Pharynx</div><div class="mcq-option"><strong>(C)</strong> Esophagus</div><div class="mcq-option"><strong>(D)</strong> Stomach</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The term 'الحنجرة' translates to 'larynx', which is the correct identification of the labeled organ.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the digestive system and excretory system are interconnected in the human body.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The digestive system breaks down food into nutrients, which are absorbed into the bloodstream. The excretory system, particularly the kidneys, filters out waste products from the blood, including those derived from the digestion of food. This interconnectedness ensures that the body maintains a balance of nutrients and eliminates waste efficiently.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #7 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_64_diag_21.png" alt="diagram_page_64_diag_21.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #7</strong> &bull; diagram_page_64_diag_21.png</span>
+                        <span>603x777</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the main organs of the human urinary system?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The main organs are the kidneys, ureters, bladder, and urethra.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which blood vessel carries blood away from the kidneys?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option"><strong>(A)</strong> Renal Vein</div><div class="mcq-option correct"><strong>(B)</strong> Renal Artery ✓</div><div class="mcq-option"><strong>(C)</strong> Aorta</div><div class="mcq-option"><strong>(D)</strong> Ureter</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (B) &bull; The renal artery carries oxygenated blood from the aorta to the kidneys.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the kidneys in the urinary system.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The kidneys filter waste products and excess substances from the blood, producing urine. They also help regulate blood pressure, electrolyte balance, and maintain overall fluid balance in the body.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #8 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_65_diag_22.png" alt="diagram_page_65_diag_22.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #8</strong> &bull; diagram_page_65_diag_22.png</span>
+                        <span>911x550</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the outer region of the kidney called?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The outer region of the kidney is called the cortex (القشرة).
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What are the tubules in a nephron referred to in Arabic?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> أنيبيبات ✓</div><div class="mcq-option"><strong>(B)</strong> شعيرات دموية</div><div class="mcq-option"><strong>(C)</strong> الأنبوب الجامع</div><div class="mcq-option"><strong>(D)</strong> نيفرون</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The tubules in a nephron are labeled as أنيبيبات (Anaybeebat) in Arabic.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of nephrons in the kidney.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Nephrons are the functional units of the kidney responsible for filtering blood, removing waste, and regulating water and electrolyte balance. Each nephron consists of a glomerulus and a tubule system that processes the filtrate to form urine, which is then excreted from the body.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدرس 1: جهازا الغدد الصم والتكاثر - Science Worksheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --q-short-bg: #f0fdf4;
+            --q-short-border: #86efac;
+            --q-mcq-bg: #eff6ff;
+            --q-mcq-border: #93c5fd;
+            --q-reason-bg: #fffbeb;
+            --q-reason-border: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container { max-width: 1240px; margin: 0 auto; }
+
+        /* Top Header Banner: ONLY LESSON NAME */
+        .lesson-banner {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18);
+        }
+
+        .lesson-header-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lesson-main-title {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lesson-sub {
+            font-size: 13.5px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: #ffffff;
+            color: #1e3a8a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        /* Diagram Card */
+        .diagram-eval-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            page-break-inside: avoid;
+        }
+
+        /* Side-by-Side: Left Image, Right Questions */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Image Box - Clean & Distinct */
+        .image-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            max-height: 480px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-meta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .image-meta strong { color: #1e3a8a; }
+
+        /* Right Column: Questions Stack */
+        .questions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shared Question Box */
+        .q-box {
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .q-type-badge {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-tag {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .q-prompt {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* 1. Short Question Box */
+        .box-short {
+            background: var(--q-short-bg);
+            border: 1.5px solid var(--q-short-border);
+        }
+        .box-short .q-type-badge { color: #15803d; }
+
+        /* 2. MCQ Box */
+        .box-mcq {
+            background: var(--q-mcq-bg);
+            border: 1.5px solid var(--q-mcq-border);
+        }
+        .box-mcq .q-type-badge { color: #1d4ed8; }
+
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .mcq-option {
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        .mcq-option.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #14532d;
+            font-weight: 700;
+        }
+
+        /* 3. Reasoning Box */
+        .box-reasoning {
+            background: var(--q-reason-bg);
+            border: 1.5px solid var(--q-reason-border);
+        }
+        .box-reasoning .q-type-badge { color: #b45309; }
+
+        /* Answers Styling */
+        .answer-block {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #334155;
+            border-left: 4px solid #22c55e;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .answer-block strong { color: #14532d; }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 980px) {
+            .card-grid { grid-template-columns: 1fr; }
+            .mcq-options-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PRINT STYLES FOR CLEAN PDF GENERATION */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .lesson-banner {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-radius: 0;
+                margin-bottom: 15px;
+            }
+            .diagram-eval-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .card-grid { grid-template-columns: 380px 1fr !important; }
+            .box-short { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-mcq { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-reasoning { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="lesson-banner">
+        <div class="lesson-header-text">
+            <h1 class="lesson-main-title">📖 الدرس: الدرس 1: جهازا الغدد الصم والتكاثر</h1>
+            <div class="lesson-sub">Grade 8 - Semester 2 Science &bull; 13 Scientific Diagram(s)</div>
+        </div>
+        <div class="header-actions no-print">
+            <a href="index.html" class="btn-action">📂 All Lessons</a>
+            <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </header>
+
+    <div class="worksheet-cards">
+        
+        <!-- Diagram #1 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_120_diag_36.png" alt="diagram_page_120_diag_36.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #1</strong> &bull; diagram_page_120_diag_36.png</span>
+                        <span>297x266</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the blood sugar level of a diabetic patient at 0 hours after breakfast?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> Approximately 1.9 grams/liter.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">At what time after breakfast does the blood sugar level of a diabetic patient peak?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> 1 hour ✓</div><div class="mcq-option"><strong>(B)</strong> 2 hours</div><div class="mcq-option"><strong>(C)</strong> 3 hours</div><div class="mcq-option"><strong>(D)</strong> 4 hours</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The blood sugar level of a diabetic patient peaks at approximately 2.5 grams/liter at 1 hour after breakfast.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain why blood sugar levels differ between a diabetic patient and a healthy individual after breakfast.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Blood sugar levels differ due to the body's ability to regulate glucose. A healthy individual has a functioning insulin response that helps lower blood sugar levels after eating, while a diabetic patient may have impaired insulin production or response, leading to higher and prolonged blood sugar levels after meals.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #2 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_121_diag_37.png" alt="diagram_page_121_diag_37.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #2</strong> &bull; diagram_page_121_diag_37.png</span>
+                        <span>350x317</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the two endocrine glands shown in the diagram of the human brain?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The two endocrine glands are the Pituitary Gland (الغدة النخامية) and the Pineal Gland (الغدة الصنوبرية).
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which gland is located inferior to the thalamus and anterior to the brainstem?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Pituitary Gland ✓</div><div class="mcq-option"><strong>(B)</strong> Pineal Gland</div><div class="mcq-option"><strong>(C)</strong> Cerebellum</div><div class="mcq-option"><strong>(D)</strong> Cerebrum</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The Pituitary Gland is specifically located inferior to the thalamus and anterior to the brainstem, as indicated in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the Pituitary Gland in the endocrine system.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The Pituitary Gland, often referred to as the 'master gland', plays a crucial role in regulating various hormonal functions in the body. It secretes hormones that influence growth, metabolism, and reproductive processes. By releasing hormones into the bloodstream, it controls other endocrine glands, such as the thyroid and adrenal glands, thereby maintaining homeostasis and coordinating bodily functions.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #3 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_121_diag_38.png" alt="diagram_page_121_diag_38.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #3</strong> &bull; diagram_page_121_diag_38.png</span>
+                        <span>381x185</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the small yellowish structures labeled in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The small yellowish structures are the ovaries.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which part of the female reproductive system is indicated by the label 'المبايض' in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> The Ovaries ✓</div><div class="mcq-option"><strong>(B)</strong> The Uterus</div><div class="mcq-option"><strong>(C)</strong> The Fallopian Tubes</div><div class="mcq-option"><strong>(D)</strong> The Vagina</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The label 'المبايض' translates to 'The Ovaries', which are the correct answer.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the ovaries in the endocrine system.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The ovaries are responsible for producing hormones such as estrogen and progesterone, which regulate various functions in the female reproductive system, including the menstrual cycle and pregnancy. They also play a crucial role in the development of secondary sexual characteristics.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #4 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_122_diag_39.png" alt="diagram_page_122_diag_39.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #4</strong> &bull; diagram_page_122_diag_39.png</span>
+                        <span>193x525</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the two main glands depicted in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The thyroid gland and the parathyroid glands.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What does the yellow line in the diagram point to?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option"><strong>(A)</strong> Thyroid gland</div><div class="mcq-option correct"><strong>(B)</strong> Parathyroid gland ✓</div><div class="mcq-option"><strong>(C)</strong> Larynx</div><div class="mcq-option"><strong>(D)</strong> Trachea</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (B) &bull; The yellow line points to the parathyroid gland, as indicated by the Arabic label next to it.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the anatomical relationship between the thyroid and parathyroid glands as shown in the diagram.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The thyroid gland is depicted as two reddish-orange lobed structures located on either side of the trachea, while the parathyroid glands are smaller, blue-purple spherical structures located on the posterior surface of the thyroid glands. This anatomical arrangement indicates that the parathyroid glands are situated behind the thyroid gland, which is essential for their function in regulating calcium levels in the body.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #5 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_122_diag_40.png" alt="diagram_page_122_diag_40.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #5</strong> &bull; diagram_page_122_diag_40.png</span>
+                        <span>317x359</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt"></div>
+            <div class="answer-block">
+                <strong>Answer:</strong> 
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                
+            </div>
+            <div class="q-prompt"></div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option"><strong>(A)</strong> </div><div class="mcq-option"><strong>(B)</strong> </div><div class="mcq-option"><strong>(C)</strong> </div><div class="mcq-option"><strong>(D)</strong> </div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> () &bull; 
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt"></div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> 
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #6 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_122_diag_41.png" alt="diagram_page_122_diag_41.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #6</strong> &bull; diagram_page_122_diag_41.png</span>
+                        <span>510x238</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the Arabic term for the pancreas?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> البنكرياس
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which organ is labeled in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> البنكرياس ✓</div><div class="mcq-option"><strong>(B)</strong> الكبد</div><div class="mcq-option"><strong>(C)</strong> الكلى</div><div class="mcq-option"><strong>(D)</strong> الرئة</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The diagram specifically labels the organ as البنكرياس, which is the Arabic term for the pancreas.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the pancreas in the endocrine system.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The pancreas plays a crucial role in the endocrine system by producing hormones such as insulin and glucagon. Insulin helps regulate blood sugar levels by facilitating the uptake of glucose into cells, while glucagon works to increase blood sugar levels when they are too low. This balance is essential for maintaining homeostasis in the body.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #7 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_122_diag_42.png" alt="diagram_page_122_diag_42.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #7</strong> &bull; diagram_page_122_diag_42.png</span>
+                        <span>229x412</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the anatomical position of the thyroid gland in relation to the larynx and trachea?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The thyroid gland is located inferior to the larynx and anterior to the trachea.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which structure is depicted in orange in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Thyroid gland ✓</div><div class="mcq-option"><strong>(B)</strong> Larynx</div><div class="mcq-option"><strong>(C)</strong> Trachea</div><div class="mcq-option"><strong>(D)</strong> Esophagus</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The orange structure in the diagram represents the thyroid gland, which is specifically labeled in the image.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the significance of the thyroid gland's position relative to the larynx and trachea.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The thyroid gland's position is significant as it plays a crucial role in regulating metabolism and is strategically located to influence the respiratory system (trachea) and vocalization (larynx). Its proximity to these structures allows for efficient hormonal regulation and interaction with the body's metabolic processes.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #8 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_122_diag_43.png" alt="diagram_page_122_diag_43.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #8</strong> &bull; diagram_page_122_diag_43.png</span>
+                        <span>330x386</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the primary function of the thyroid gland?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The primary function of the thyroid gland is to regulate metabolism through the production of hormones such as thyroxine.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What structure connects the two lobes of the thyroid gland?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Isthmus ✓</div><div class="mcq-option"><strong>(B)</strong> Follicle</div><div class="mcq-option"><strong>(C)</strong> Lobe</div><div class="mcq-option"><strong>(D)</strong> Vessel</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The isthmus is the tissue that connects the two lobes of the thyroid gland, as indicated by the yellow line in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the structure of the thyroid gland relates to its function.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The thyroid gland's bilobed structure allows for a larger surface area for hormone production and secretion. The textured, nodular surface indicates the presence of follicles that store thyroid hormones, which are essential for regulating metabolism. This structural adaptation enhances the gland's efficiency in hormone synthesis and release.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #9 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_123_diag_44.png" alt="diagram_page_123_diag_44.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #9</strong> &bull; diagram_page_123_diag_44.png</span>
+                        <span>1436x652</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What hormone does the pancreas produce in response to high blood sugar levels?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> Insulin
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What is the first step in the process of regulating blood sugar levels?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Meals are eaten ✓</div><div class="mcq-option"><strong>(B)</strong> Insulin is released</div><div class="mcq-option"><strong>(C)</strong> Blood sugar level increases</div><div class="mcq-option"><strong>(D)</strong> Glucose is absorbed by the intestines</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The process begins with the consumption of food, which is the first step in regulating blood sugar levels.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how insulin helps to regulate blood sugar levels in the body.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Insulin helps to regulate blood sugar levels by facilitating the uptake of glucose into the liver and other tissues. When blood sugar levels rise after eating, the pancreas releases insulin, which acts like a key to allow glucose to enter cells, thereby lowering blood sugar levels back to normal.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #10 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_124_diag_45.png" alt="diagram_page_124_diag_45.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #10</strong> &bull; diagram_page_124_diag_45.png</span>
+                        <span>940x718</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the role of the pituitary gland in hormonal regulation?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The pituitary gland initiates and controls the production of sex hormones in both males and females.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which hormone production is stimulated by the brain and pituitary gland in females?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> إنتاج الهرمونات الجنسية الأنثوية ✓</div><div class="mcq-option"><strong>(B)</strong> إنتاج الهرمونات الجنسية الذكرية</div><div class="mcq-option"><strong>(C)</strong> إنتاج الهرمونات الذكرية</div><div class="mcq-option"><strong>(D)</strong> إنتاج الهرمونات الجنسية المحايدة</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The diagram indicates that the brain and pituitary gland stimulate the production of female sex hormones, as shown by the red arrow pointing to 'إنتاج الهرمونات الجنسية الأنثوية'.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the brain influences reproductive functions in both males and females.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The brain, through the pituitary gland, releases hormones that regulate the production of sex hormones in both males and females. In females, this leads to the production of female sex hormones, which stimulate egg production in the ovaries. In males, it results in the production of male sex hormones, which are essential for sperm production in the testes.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #11 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_125_diag_46.png" alt="diagram_page_125_diag_46.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #11</strong> &bull; diagram_page_125_diag_46.png</span>
+                        <span>1225x693</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the three main parts of a sperm cell?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The three main parts of a sperm cell are the head, nucleus, and tail.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which organ is responsible for storing urine in the male reproductive system?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> المثانة (Bladder) ✓</div><div class="mcq-option"><strong>(B)</strong> الحوصلة المنوية (Seminal Vesicle)</div><div class="mcq-option"><strong>(C)</strong> غدة البروستات (Prostate Gland)</div><div class="mcq-option"><strong>(D)</strong> القضيب (Penis)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The المثانة (Bladder) is the organ that stores urine.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the tail in a sperm cell.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The tail of a sperm cell is crucial for its motility. It propels the sperm forward, allowing it to swim through the female reproductive tract to reach and fertilize the egg.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #12 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_126_diag_47.png" alt="diagram_page_126_diag_47.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #12</strong> &bull; diagram_page_126_diag_47.png</span>
+                        <span>1243x625</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the function of the uterus in the female reproductive system?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The uterus is responsible for housing and nurturing a developing fetus during pregnancy.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which organ is located anterior to the uterus?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Bladder ✓</div><div class="mcq-option"><strong>(B)</strong> Ovary</div><div class="mcq-option"><strong>(C)</strong> Cervix</div><div class="mcq-option"><strong>(D)</strong> Vagina</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The bladder is positioned anterior to the uterus, as shown in the lateral view of the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of the fallopian tubes in the female reproductive system.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The fallopian tubes transport the ova from the ovaries to the uterus. They are also the site where fertilization typically occurs when sperm meets the egg.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #13 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_128_diag_48.png" alt="diagram_page_128_diag_48.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #13</strong> &bull; diagram_page_128_diag_48.png</span>
+                        <span>943x513</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the duration of a typical menstrual cycle as shown in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> 28 days
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">During which phase does menstruation occur according to the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> الطور الأول (Phase One) ✓</div><div class="mcq-option"><strong>(B)</strong> الطور الثاني (Phase Two)</div><div class="mcq-option"><strong>(C)</strong> الطور الثالث (Phase Three)</div><div class="mcq-option"><strong>(D)</strong> None of the above</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; Menstruation occurs during the first few days of الطور الأول (Phase One), specifically around days 1-4.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the thickness of the uterine lining changes throughout the menstrual cycle.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The thickness of the uterine lining increases during the menstrual cycle due to hormonal changes. After menstruation, the lining begins to thicken in preparation for a potential pregnancy, peaking in thickness during الطور الثاني (Phase Two). If fertilization does not occur, the lining is shed during menstruation, marking the start of the cycle again.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+</body>
+</html>

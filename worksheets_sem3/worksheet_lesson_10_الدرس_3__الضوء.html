@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدرس 3: الضوء - Science Worksheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --q-short-bg: #f0fdf4;
+            --q-short-border: #86efac;
+            --q-mcq-bg: #eff6ff;
+            --q-mcq-border: #93c5fd;
+            --q-reason-bg: #fffbeb;
+            --q-reason-border: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container { max-width: 1240px; margin: 0 auto; }
+
+        /* Top Header Banner: ONLY LESSON NAME */
+        .lesson-banner {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18);
+        }
+
+        .lesson-header-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lesson-main-title {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lesson-sub {
+            font-size: 13.5px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: #ffffff;
+            color: #1e3a8a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        /* Diagram Card */
+        .diagram-eval-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            page-break-inside: avoid;
+        }
+
+        /* Side-by-Side: Left Image, Right Questions */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Image Box - Clean & Distinct */
+        .image-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            max-height: 480px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-meta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .image-meta strong { color: #1e3a8a; }
+
+        /* Right Column: Questions Stack */
+        .questions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shared Question Box */
+        .q-box {
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .q-type-badge {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-tag {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .q-prompt {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* 1. Short Question Box */
+        .box-short {
+            background: var(--q-short-bg);
+            border: 1.5px solid var(--q-short-border);
+        }
+        .box-short .q-type-badge { color: #15803d; }
+
+        /* 2. MCQ Box */
+        .box-mcq {
+            background: var(--q-mcq-bg);
+            border: 1.5px solid var(--q-mcq-border);
+        }
+        .box-mcq .q-type-badge { color: #1d4ed8; }
+
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .mcq-option {
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        .mcq-option.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #14532d;
+            font-weight: 700;
+        }
+
+        /* 3. Reasoning Box */
+        .box-reasoning {
+            background: var(--q-reason-bg);
+            border: 1.5px solid var(--q-reason-border);
+        }
+        .box-reasoning .q-type-badge { color: #b45309; }
+
+        /* Answers Styling */
+        .answer-block {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #334155;
+            border-left: 4px solid #22c55e;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .answer-block strong { color: #14532d; }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 980px) {
+            .card-grid { grid-template-columns: 1fr; }
+            .mcq-options-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PRINT STYLES FOR CLEAN PDF GENERATION */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .lesson-banner {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-radius: 0;
+                margin-bottom: 15px;
+            }
+            .diagram-eval-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .card-grid { grid-template-columns: 380px 1fr !important; }
+            .box-short { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-mcq { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-reasoning { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="lesson-banner">
+        <div class="lesson-header-text">
+            <h1 class="lesson-main-title">📖 الدرس: الدرس 3: الضوء</h1>
+            <div class="lesson-sub">Grade 8 - Semester 3 Science &bull; 6 Scientific Diagram(s)</div>
+        </div>
+        <div class="header-actions no-print">
+            <a href="index.html" class="btn-action">📂 All Lessons</a>
+            <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </header>
+
+    <div class="worksheet-cards">
+        
+        <!-- Diagram #1 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_121_diag_32.png" alt="diagram_page_121_diag_32.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #1</strong> &bull; diagram_page_121_diag_32.png</span>
+                        <span>887x386</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the two components of an electromagnetic wave?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The two components of an electromagnetic wave are the electric field and the magnetic field.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which field oscillates vertically in an electromagnetic wave?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Electric field (المجال الكهربائي) ✓</div><div class="mcq-option"><strong>(B)</strong> Magnetic field (المجال المغناطيسي)</div><div class="mcq-option"><strong>(C)</strong> Both fields oscillate vertically</div><div class="mcq-option"><strong>(D)</strong> Neither field oscillates vertically</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The electric field (المجال الكهربائي) is represented by the blue sinusoidal wave and oscillates vertically, as indicated in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain why the electric and magnetic fields in an electromagnetic wave are perpendicular to each other.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The electric and magnetic fields in an electromagnetic wave are perpendicular to each other due to the nature of electromagnetic radiation. When one field reaches its maximum amplitude, the other field is also at its maximum, and they oscillate in such a way that they maintain a 90-degree angle. This perpendicular arrangement allows for the efficient propagation of the wave through space, as described by Maxwell's equations.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #2 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_122_diag_33.png" alt="diagram_page_122_diag_33.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #2</strong> &bull; diagram_page_122_diag_33.png</span>
+                        <span>1117x415</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the different types of electromagnetic waves shown in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The types of electromagnetic waves are Radio waves, Microwaves, Infrared waves, Visible light, Ultraviolet waves, X-rays, and Gamma rays.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which direction indicates increasing frequency in the electromagnetic spectrum?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Right ✓</div><div class="mcq-option"><strong>(B)</strong> Left</div><div class="mcq-option"><strong>(C)</strong> Up</div><div class="mcq-option"><strong>(D)</strong> Down</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The right direction in the diagram is labeled 'تزايد التردد' (Increasing Frequency), indicating that frequency increases as you move to the right.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the wavelength and frequency of electromagnetic waves are related as shown in the diagram.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> In the diagram, as you move from left to right, the wavelength of electromagnetic waves decreases while the frequency increases. This inverse relationship means that longer wavelengths correspond to lower frequencies (like Radio waves), while shorter wavelengths correspond to higher frequencies (like Gamma rays). This is a fundamental characteristic of electromagnetic waves.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #3 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_123_diag_34.png" alt="diagram_page_123_diag_34.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #3</strong> &bull; diagram_page_123_diag_34.png</span>
+                        <span>581x381</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the three main regions of the electromagnetic spectrum illustrated in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The three main regions are Infrared, Visible, and Ultraviolet.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">In which region of the electromagnetic spectrum does the intensity peak according to the graph?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option"><strong>(A)</strong> Infrared</div><div class="mcq-option correct"><strong>(B)</strong> Visible ✓</div><div class="mcq-option"><strong>(C)</strong> Ultraviolet</div><div class="mcq-option"><strong>(D)</strong> None of the above</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (B) &bull; The intensity peaks in the Visible region, specifically in the blue/green area, as shown by the curve in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain why the intensity of electromagnetic radiation decreases in the ultraviolet region.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The intensity decreases in the ultraviolet region due to the absorption of UV radiation by the atmosphere and the inherent properties of the radiation itself, which leads to less energy being emitted in that range compared to the visible spectrum.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #4 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_124_diag_35.png" alt="diagram_page_124_diag_35.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #4</strong> &bull; diagram_page_124_diag_35.png</span>
+                        <span>865x612</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the first part of the eye that light passes through?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The cornea.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which part of the eye is responsible for refracting light to focus it on the retina?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Lens ✓</div><div class="mcq-option"><strong>(B)</strong> Pupil</div><div class="mcq-option"><strong>(C)</strong> Cornea</div><div class="mcq-option"><strong>(D)</strong> Retina</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The lens is responsible for refracting light rays to focus them on the retina, as indicated in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how light is focused on the retina in the human eye.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Light enters the eye through the cornea, which begins the focusing process. It then passes through the pupil, where the amount of light is regulated. After the pupil, the lens further refracts the light rays, adjusting their focus to converge at a specific point on the retina, known as the focal point. This process allows for the formation of a clear image.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #5 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_125_diag_36.png" alt="diagram_page_125_diag_36.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #5</strong> &bull; diagram_page_125_diag_36.png</span>
+                        <span>599x412</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What part of the eye is responsible for focusing light?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The lens is responsible for focusing light in the eye.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What does the label 'ضوء من مصدر بعيد' indicate in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Light from a distant source ✓</div><div class="mcq-option"><strong>(B)</strong> Light from a nearby source</div><div class="mcq-option"><strong>(C)</strong> Light being absorbed</div><div class="mcq-option"><strong>(D)</strong> Light being reflected</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The label indicates that the light rays depicted in the diagram are coming from a source that is far away, which is essential for understanding how the eye focuses distant light.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the lens of the eye contributes to vision.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The lens of the eye refracts light rays that enter the eye, bending them so that they converge on the retina. This process allows the eye to focus on objects at various distances, enabling clear vision. When light from a distant source enters the eye, the lens adjusts its shape to ensure that the light rays meet at the retina, where the image is formed.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #6 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_125_diag_37.png" alt="diagram_page_125_diag_37.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #6</strong> &bull; diagram_page_125_diag_37.png</span>
+                        <span>599x412</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the focal point in the human eye?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The focal point is the specific spot on the retina where light rays converge.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What does the label 'ضوء من مصدر بعيد' indicate in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Light from a distant source ✓</div><div class="mcq-option"><strong>(B)</strong> Light from a nearby source</div><div class="mcq-option"><strong>(C)</strong> The focal point of the eye</div><div class="mcq-option"><strong>(D)</strong> The lens of the eye</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The label 'ضوء من مصدر بعيد' translates to 'light from a distant source', indicating the origin of the light rays entering the eye.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">How does the human eye focus light from a distant source?</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The human eye focuses light from a distant source by allowing parallel light rays to enter through the cornea and lens. The lens bends these rays inward, converging them at the focal point on the retina, which enables clear vision of distant objects.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+</body>
+</html>

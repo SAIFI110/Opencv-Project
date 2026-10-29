@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدرس 2: الجهاز الهيكلي والجهاز العصبي - Science Worksheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --q-short-bg: #f0fdf4;
+            --q-short-border: #86efac;
+            --q-mcq-bg: #eff6ff;
+            --q-mcq-border: #93c5fd;
+            --q-reason-bg: #fffbeb;
+            --q-reason-border: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container { max-width: 1240px; margin: 0 auto; }
+
+        /* Top Header Banner: ONLY LESSON NAME */
+        .lesson-banner {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18);
+        }
+
+        .lesson-header-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lesson-main-title {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lesson-sub {
+            font-size: 13.5px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: #ffffff;
+            color: #1e3a8a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        /* Diagram Card */
+        .diagram-eval-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            page-break-inside: avoid;
+        }
+
+        /* Side-by-Side: Left Image, Right Questions */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Image Box - Clean & Distinct */
+        .image-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            max-height: 480px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-meta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .image-meta strong { color: #1e3a8a; }
+
+        /* Right Column: Questions Stack */
+        .questions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shared Question Box */
+        .q-box {
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .q-type-badge {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-tag {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .q-prompt {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* 1. Short Question Box */
+        .box-short {
+            background: var(--q-short-bg);
+            border: 1.5px solid var(--q-short-border);
+        }
+        .box-short .q-type-badge { color: #15803d; }
+
+        /* 2. MCQ Box */
+        .box-mcq {
+            background: var(--q-mcq-bg);
+            border: 1.5px solid var(--q-mcq-border);
+        }
+        .box-mcq .q-type-badge { color: #1d4ed8; }
+
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .mcq-option {
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        .mcq-option.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #14532d;
+            font-weight: 700;
+        }
+
+        /* 3. Reasoning Box */
+        .box-reasoning {
+            background: var(--q-reason-bg);
+            border: 1.5px solid var(--q-reason-border);
+        }
+        .box-reasoning .q-type-badge { color: #b45309; }
+
+        /* Answers Styling */
+        .answer-block {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #334155;
+            border-left: 4px solid #22c55e;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .answer-block strong { color: #14532d; }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 980px) {
+            .card-grid { grid-template-columns: 1fr; }
+            .mcq-options-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PRINT STYLES FOR CLEAN PDF GENERATION */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .lesson-banner {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-radius: 0;
+                margin-bottom: 15px;
+            }
+            .diagram-eval-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .card-grid { grid-template-columns: 380px 1fr !important; }
+            .box-short { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-mcq { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-reasoning { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="lesson-banner">
+        <div class="lesson-header-text">
+            <h1 class="lesson-main-title">📖 الدرس: الدرس 2: الجهاز الهيكلي والجهاز العصبي</h1>
+            <div class="lesson-sub">Grade 8 - Semester 2 Science &bull; 8 Scientific Diagram(s)</div>
+        </div>
+        <div class="header-actions no-print">
+            <a href="index.html" class="btn-action">📂 All Lessons</a>
+            <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </header>
+
+    <div class="worksheet-cards">
+        
+        <!-- Diagram #1 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_94_diag_27.png" alt="diagram_page_94_diag_27.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #1</strong> &bull; diagram_page_94_diag_27.png</span>
+                        <span>958x539</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the function of cartilage in long bones?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> Cartilage covers the articular surfaces of bones, providing a smooth surface for joint movement and cushioning.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which structure is located at the ends of the long bone?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> الغضروف (Cartilage) ✓</div><div class="mcq-option"><strong>(B)</strong> العظم الكثيف (Compact Bone)</div><div class="mcq-option"><strong>(C)</strong> تجويف النخاع (Medullary Cavity)</div><div class="mcq-option"><strong>(D)</strong> السمحاق (Periosteum)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The cartilage (الغضروف) is specifically located at the ends of the long bone, covering the articular surfaces.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the structure of spongy bone contributes to its function.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Spongy bone has a porous, lattice-like structure that reduces the weight of the bone while providing strength and support. This design allows for the efficient distribution of forces and helps in the production of blood cells within the bone marrow located in the medullary cavity.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #2 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_95_diag_28.png" alt="diagram_page_95_diag_28.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #2</strong> &bull; diagram_page_95_diag_28.png</span>
+                        <span>397x539</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the initial structure that forms before bone development in endochondral ossification?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The initial structure is cartilage, labeled as 'غضروف' in Arabic.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What does the term 'مصدر دم' in the diagram refer to?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Blood source ✓</div><div class="mcq-option"><strong>(B)</strong> Bone structure</div><div class="mcq-option"><strong>(C)</strong> Cartilage</div><div class="mcq-option"><strong>(D)</strong> Oxygen supply</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; 'مصدر دم' translates to 'blood source', indicating the importance of blood supply in the ossification process.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the significance of blood vessels in the process of endochondral ossification.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Blood vessels are crucial in endochondral ossification as they supply essential nutrients and oxygen to the developing bone tissue. They also facilitate the transport of cells that contribute to bone formation, marking the transition from cartilage to bone.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #3 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_98_diag_29.png" alt="diagram_page_98_diag_29.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #3</strong> &bull; diagram_page_98_diag_29.png</span>
+                        <span>475x585</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the main components of the human skeletal system depicted in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The main components depicted are the vertebral column (spine) and the ribs.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What does the bright red color in the upper part of the spine likely indicate?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Pain or inflammation ✓</div><div class="mcq-option"><strong>(B)</strong> Healthy tissue</div><div class="mcq-option"><strong>(C)</strong> Bone density</div><div class="mcq-option"><strong>(D)</strong> Muscle tissue</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The bright red color typically symbolizes pain, inflammation, or a specific area of medical interest.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">How does the color gradient from red to purple in the spine relate to its function or condition?</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The color gradient suggests varying levels of intensity or condition, with red indicating potential issues like pain or inflammation at the upper spine, while the transition to purple and blue may represent normal or less critical areas, indicating a decrease in severity or concern.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #4 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_100_diag_30.png" alt="diagram_page_100_diag_30.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #4</strong> &bull; diagram_page_100_diag_30.png</span>
+                        <span>1208x497</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the main components of a neuron?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The main components of a neuron are the cell body, dendrites, and axon.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What is the direction of the neural impulse in a neuron?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> From the cell body along the axon towards the axon terminal ✓</div><div class="mcq-option"><strong>(B)</strong> From the axon terminal to the cell body</div><div class="mcq-option"><strong>(C)</strong> Between dendrites only</div><div class="mcq-option"><strong>(D)</strong> In all directions from the cell body</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The neural impulse travels from the cell body along the axon towards the axon terminal, as indicated by the arrow in the diagram.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of neurotransmitters in the synapse.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Neurotransmitters are chemical messengers that are released from the axon terminal into the synapse. They transmit signals between neurons or between a neuron and a target cell, allowing for communication within the nervous system.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #5 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_101_diag_31.png" alt="diagram_page_101_diag_31.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #5</strong> &bull; diagram_page_101_diag_31.png</span>
+                        <span>519x971</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the two main components of the human nervous system as shown in the diagram?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The two main components are the central nervous system (brain and spinal cord) and the peripheral nervous system (spinal nerves).
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which part of the nervous system is represented by the yellow structure in the diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Spinal Cord ✓</div><div class="mcq-option"><strong>(B)</strong> Brain</div><div class="mcq-option"><strong>(C)</strong> Spinal Nerves</div><div class="mcq-option"><strong>(D)</strong> Peripheral Nerves</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The yellow structure extending downwards from the brain represents the spinal cord.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the role of spinal nerves in the human body.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Spinal nerves are responsible for transmitting signals between the spinal cord and various parts of the body, allowing for communication between the central nervous system and peripheral areas. They facilitate motor control and sensory information processing.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #6 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_103_diag_32.png" alt="diagram_page_103_diag_32.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #6</strong> &bull; diagram_page_103_diag_32.png</span>
+                        <span>1069x606</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the function of the cornea in the human eye?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The cornea is the transparent outer layer that helps to focus light entering the eye.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which part of the eye is responsible for collecting light before it reaches the retina?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> العدسة (Lens) ✓</div><div class="mcq-option"><strong>(B)</strong> البؤبؤ (Pupil)</div><div class="mcq-option"><strong>(C)</strong> القزحية (Iris)</div><div class="mcq-option"><strong>(D)</strong> القرنية (Cornea)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The lens (العدسة) focuses light onto the retina, allowing for clear vision.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how light travels through the eye and its importance for vision.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Light enters the eye through the cornea, which bends the light rays. It then passes through the pupil, where the iris controls the amount of light entering. The lens further focuses the light onto the retina, where photoreceptors convert the light into electrical signals sent to the brain via the optic nerve. This process is crucial for forming clear images.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #7 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_104_diag_33.png" alt="diagram_page_104_diag_33.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #7</strong> &bull; diagram_page_104_diag_33.png</span>
+                        <span>868x508</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the three main parts of the human ear?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The three main parts of the human ear are the outer ear, middle ear, and inner ear.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which structure separates the outer ear from the middle ear?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Eardrum (غشاء الطبلة) ✓</div><div class="mcq-option"><strong>(B)</strong> Cochlea (القوقعة)</div><div class="mcq-option"><strong>(C)</strong> Pinna (الصيوان)</div><div class="mcq-option"><strong>(D)</strong> Auditory Canal (القناة السمعية)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The eardrum (غشاء الطبلة) is the membrane that separates the outer ear from the middle ear.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how sound travels through the different parts of the ear.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Sound waves enter the outer ear through the pinna and travel down the auditory canal to the eardrum, causing it to vibrate. These vibrations are transmitted to the ossicles in the middle ear (malleus, incus, and stapes), which amplify the sound. The stapes then transfers these vibrations to the cochlea in the inner ear, where they are converted into electrical signals that are sent to the brain for interpretation.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #8 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem2/diagram_page_106_diag_34.png" alt="diagram_page_106_diag_34.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #8</strong> &bull; diagram_page_106_diag_34.png</span>
+                        <span>989x568</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the function of taste hairs in a taste bud?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> Taste hairs, or microvilli, extend into the taste pore and are responsible for detecting dissolved substances, allowing us to taste.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which part of the taste bud allows dissolved substances to enter?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> ثقب ذوقي (Taste pore) ✓</div><div class="mcq-option"><strong>(B)</strong> شعيرات ذوقية (Taste hairs)</div><div class="mcq-option"><strong>(C)</strong> خلايا حسية (Sensory cells)</div><div class="mcq-option"><strong>(D)</strong> خلايا داعمة (Supporting cells)</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The taste pore (ثقب ذوقي) is the opening at the top of the taste bud where dissolved substances can enter, making it essential for the taste sensation.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the sensory nerve fiber is connected to the taste bud.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The sensory nerve fiber (ليف عصبي حسي) extends from the base of the taste bud, connecting it to the nervous system. This connection allows the taste bud to send signals to the brain when it detects taste stimuli, facilitating the perception of taste.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+</body>
+</html>

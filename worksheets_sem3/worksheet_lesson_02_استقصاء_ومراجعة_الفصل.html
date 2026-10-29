@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استقصاء ومراجعة الفصل - Science Worksheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --accent: #2563eb;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --q-short-bg: #f0fdf4;
+            --q-short-border: #86efac;
+            --q-mcq-bg: #eff6ff;
+            --q-mcq-border: #93c5fd;
+            --q-reason-bg: #fffbeb;
+            --q-reason-border: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container { max-width: 1240px; margin: 0 auto; }
+
+        /* Top Header Banner: ONLY LESSON NAME */
+        .lesson-banner {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18);
+        }
+
+        .lesson-header-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lesson-main-title {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: 'Noto Sans Arabic', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lesson-sub {
+            font-size: 13.5px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: #ffffff;
+            color: #1e3a8a;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #f1f5f9; transform: translateY(-1px); }
+
+        /* Diagram Card */
+        .diagram-eval-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            page-break-inside: avoid;
+        }
+
+        /* Side-by-Side: Left Image, Right Questions */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Image Box - Clean & Distinct */
+        .image-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .image-box img {
+            max-width: 100%;
+            max-height: 480px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+
+        .image-meta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 4px;
+        }
+
+        .image-meta strong { color: #1e3a8a; }
+
+        /* Right Column: Questions Stack */
+        .questions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shared Question Box */
+        .q-box {
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .q-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .q-type-badge {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diagram-tag {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .q-prompt {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* 1. Short Question Box */
+        .box-short {
+            background: var(--q-short-bg);
+            border: 1.5px solid var(--q-short-border);
+        }
+        .box-short .q-type-badge { color: #15803d; }
+
+        /* 2. MCQ Box */
+        .box-mcq {
+            background: var(--q-mcq-bg);
+            border: 1.5px solid var(--q-mcq-border);
+        }
+        .box-mcq .q-type-badge { color: #1d4ed8; }
+
+        .mcq-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .mcq-option {
+            background: #ffffff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        .mcq-option.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #14532d;
+            font-weight: 700;
+        }
+
+        /* 3. Reasoning Box */
+        .box-reasoning {
+            background: var(--q-reason-bg);
+            border: 1.5px solid var(--q-reason-border);
+        }
+        .box-reasoning .q-type-badge { color: #b45309; }
+
+        /* Answers Styling */
+        .answer-block {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            color: #334155;
+            border-left: 4px solid #22c55e;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .answer-block strong { color: #14532d; }
+
+        /* Responsive Breakpoint */
+        @media (max-width: 980px) {
+            .card-grid { grid-template-columns: 1fr; }
+            .mcq-options-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PRINT STYLES FOR CLEAN PDF GENERATION */
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            .lesson-banner {
+                background: #1e3a8a !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                border-radius: 0;
+                margin-bottom: 15px;
+            }
+            .diagram-eval-card {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .card-grid { grid-template-columns: 380px 1fr !important; }
+            .box-short { background: #f0fdf4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-mcq { background: #eff6ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .box-reasoning { background: #fffbeb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="lesson-banner">
+        <div class="lesson-header-text">
+            <h1 class="lesson-main-title">📖 الدرس: استقصاء ومراجعة الفصل</h1>
+            <div class="lesson-sub">Grade 8 - Semester 3 Science &bull; 2 Scientific Diagram(s)</div>
+        </div>
+        <div class="header-actions no-print">
+            <a href="index.html" class="btn-action">📂 All Lessons</a>
+            <button class="btn-action" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </header>
+
+    <div class="worksheet-cards">
+        
+        <!-- Diagram #1 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_38_diag_07.png" alt="diagram_page_38_diag_07.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #1</strong> &bull; diagram_page_38_diag_07.png</span>
+                        <span>1410x561</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What are the two main categories of seed plants?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The two main categories of seed plants are 'البذور في مخاريط' (Seeds in cones) and 'البذور في أزهار' (Seeds in flowers).
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">Which of the following is a sub-category of 'البذور في مخاريط'?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> معراة البذور ✓</div><div class="mcq-option"><strong>(B)</strong> ذوات الفلقة</div><div class="mcq-option"><strong>(C)</strong> العاذر</div><div class="mcq-option"><strong>(D)</strong> البذور في أزهار</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; 'معراة البذور' (Gymnosperms) is a sub-category under 'البذور في مخاريط' (Seeds in cones).
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain the significance of classifying seed plants into categories based on their seed location.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> Classifying seed plants based on their seed location helps in understanding their reproductive strategies and adaptations. For instance, gymnosperms, which have seeds in cones, often have different ecological roles and adaptations compared to angiosperms, which have seeds in flowers. This classification aids in studying plant evolution, ecology, and their interactions with the environment.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+        <!-- Diagram #2 Card -->
+        <div class="diagram-eval-card">
+            <div class="card-grid">
+                <!-- Left: Diagram Image Box (Separate & Distinct) -->
+                <div class="image-box">
+                    <img src="../output_diagrams_sem3/diagram_page_96_diag_21.png" alt="diagram_page_96_diag_21.png" loading="lazy">
+                    <div class="image-meta">
+                        <span><strong>Diagram #2</strong> &bull; diagram_page_96_diag_21.png</span>
+                        <span>576x503</span>
+                    </div>
+                </div>
+
+                <!-- Right: Dedicated 3 Questions for THIS Diagram -->
+                <div class="questions-stack">
+                    
+        <div class="q-box box-short">
+            <div class="q-box-header">
+                <span class="q-type-badge">📝 Question 1: Short Question (سؤال قصير)</span>
+                
+            </div>
+            <div class="q-prompt">What is the main function of the compressor in a heat pump system?</div>
+            <div class="answer-block">
+                <strong>Answer:</strong> The compressor pressurizes the refrigerant, allowing it to circulate through the system.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-mcq">
+            <div class="q-box-header">
+                <span class="q-type-badge">🔘 Question 2: Multiple Choice (اختيار من متعدد)</span>
+                <span class="diagram-tag">🔍 Diagram-Based</span>
+            </div>
+            <div class="q-prompt">What is indicated by the arrows in the heat pump diagram?</div>
+            <div class="mcq-options-grid">
+                <div class="mcq-option correct"><strong>(A)</strong> Direction of refrigerant flow ✓</div><div class="mcq-option"><strong>(B)</strong> Direction of air flow</div><div class="mcq-option"><strong>(C)</strong> Direction of heat loss</div><div class="mcq-option"><strong>(D)</strong> Direction of electricity flow</div>
+            </div>
+            <div class="answer-block">
+                <strong>Correct Option:</strong> (A) &bull; The arrows indicate the direction of refrigerant flow between the indoor and outdoor units.
+            </div>
+        </div>
+        
+                    
+        <div class="q-box box-reasoning">
+            <div class="q-box-header">
+                <span class="q-type-badge">💡 Question 3: Scientific Reasoning (سؤال تعليلي)</span>
+                
+            </div>
+            <div class="q-prompt">Explain how the heat pump system absorbs heat from the outside air.</div>
+            <div class="answer-block">
+                <strong>Explanation:</strong> The heat pump system absorbs heat by circulating refrigerant through the outdoor coils, where warm air passes over these coils. The refrigerant, which is at a lower temperature, absorbs heat from the warm air, causing it to evaporate and change into a gas. This gas is then compressed by the compressor, increasing its temperature before it is circulated indoors.
+            </div>
+        </div>
+        
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+</body>
+</html>
