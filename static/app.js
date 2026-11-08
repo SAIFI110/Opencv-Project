@@ -81,23 +81,54 @@ function setModalTab(type) {
   state.assessmentType = type;
   document.getElementById('tabTheory').classList.toggle('active', type === 'theory');
   document.getElementById('tabDiagram').classList.toggle('active', type === 'diagram');
+  const typeWrapper = document.getElementById('typeSelectWrapper');
+  if (typeWrapper) {
+    typeWrapper.style.display = (type === 'theory') ? 'block' : 'none';
+  }
   populateModalDropdown();
 }
 
 async function confirmStartAssessment() {
   const lesson = document.getElementById('modalLessonDropdown').value;
+  const customTopicInput = document.getElementById('modalCustomTopic');
+  const customTopic = customTopicInput ? customTopicInput.value.trim() : '';
+  const qType = document.getElementById('modalQuestionType') ? document.getElementById('modalQuestionType').value : 'both';
+  const qCount = document.getElementById('modalQuestionCount') ? parseInt(document.getElementById('modalQuestionCount').value, 10) : 5;
+
+  const targetTopic = customTopic || lesson || 'General Science';
   closeAssessmentModal();
 
   state.score = { correct: 0, total: 0 };
 
   if (state.assessmentType === 'theory') {
-    appendUserMessage(`Generate Theory Assessment for: ${lesson}`);
+    let num_mcq = 0;
+    let num_short = 0;
+    if (qType === 'mcq') {
+      num_mcq = qCount;
+      num_short = 0;
+    } else if (qType === 'short') {
+      num_mcq = 0;
+      num_short = qCount;
+    } else {
+      // 'both' (split proportionally)
+      num_mcq = Math.max(1, Math.ceil(qCount * 0.6));
+      num_short = Math.max(1, qCount - num_mcq);
+    }
+
+    appendUserMessage(`Generate Theory Assessment for: "${targetTopic}" (${qCount} questions • ${qType.toUpperCase()})`);
     const thinkingEl = appendThinkingIndicator();
     try {
       const res = await fetch('/api/assessment/theory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ semester: state.semester, lesson: lesson, num_mcq: 5, num_short: 3 })
+        body: JSON.stringify({ 
+          semester: state.semester, 
+          lesson: lesson, 
+          topic: targetTopic,
+          question_type: qType,
+          num_mcq: num_mcq, 
+          num_short: num_short 
+        })
       });
       thinkingEl.remove();
       if (!res.ok) throw new Error('Failed to generate assessment');
@@ -108,13 +139,18 @@ async function confirmStartAssessment() {
       appendBotMessage(`Error generating assessment: ${e.message}`);
     }
   } else {
-    appendUserMessage(`Show Diagram Assessment for: ${lesson || 'All'}`);
+    appendUserMessage(`Show Diagram Assessment for: "${targetTopic || 'All'}"`);
     const thinkingEl = appendThinkingIndicator();
     try {
       const res = await fetch('/api/assessment/diagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ semester: state.semester, lesson: lesson })
+        body: JSON.stringify({ 
+          semester: state.semester, 
+          lesson: lesson,
+          topic: targetTopic,
+          num_questions: qCount
+        })
       });
       thinkingEl.remove();
       if (!res.ok) throw new Error('Failed to load diagrams');
@@ -308,7 +344,42 @@ async function sendChatMessage() {
   appendUserMessage(text);
   input.value = '';
 
-  if (text.toLowerCase().includes('assessment') || text.toLowerCase().includes('quiz')) {
+  const lower = text.toLowerCase();
+  const mcqMatch = text.match(/(\d+)\s*(?:mcq|mcqs|question|questions|sawal)/i);
+
+  // Direct conversational trigger for dynamic assessment
+  if (mcqMatch) {
+    const count = parseInt(mcqMatch[1], 10);
+    let topic = text.replace(mcqMatch[0], '')
+                    .replace(/create|generate|give me|bna do|bna ke do|chahiye|from|on|me se|in/gi, '')
+                    .trim();
+    if (!topic) topic = "General Science";
+
+    const thinkingEl = appendThinkingIndicator();
+    try {
+      const res = await fetch('/api/assessment/theory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          semester: state.semester,
+          topic: topic,
+          question_type: 'mcq',
+          num_mcq: count,
+          num_short: 0
+        })
+      });
+      thinkingEl.remove();
+      if (!res.ok) throw new Error('Failed to generate assessment');
+      const data = await res.json();
+      renderTheoryWidget(data);
+      return;
+    } catch (e) {
+      thinkingEl.remove();
+      // Fallback to conversational tutor if needed
+    }
+  }
+
+  if (lower.includes('create an assessment') || lower === 'assessment' || lower === 'quiz' || lower === 'اختبار') {
     openAssessmentModal();
     return;
   }

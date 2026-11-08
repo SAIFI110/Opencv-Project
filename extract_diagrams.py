@@ -2,16 +2,14 @@
 Educational Diagram Extraction, Vision Evaluation & MySQL Pipeline
 Grade 8 Science (Saudi Curriculum)
 ==================================================================
-1. Code-Level Fast Filters: Discards QR codes, thin line banners, and tiny icons without LLM calls.
+1. Code-Level Fast Filters: Discards QR codes via OpenCV, thin lines, and tiny icons without LLM calls.
 2. Multimodal Vision Gatekeeper (gpt-4o-mini with Vision):
-   - Passes the actual Base64 Image to the AI.
-   - Discards decorative photos, covers, and banners.
+   - Evaluates Base64 diagram image against 8th-grade science curriculum standards.
    - Flags: is_suitable_for_labeling ('YES'/'NO') and is_useful_for_questions ('YES'/'NO').
-3. Dual Storage:
+3. Storage:
    - Saves clean PNGs to output_diagrams_semX/
-   - Writes Excel CSV: diagrams_metadata_semX.csv with UTF-8-BOM encoding.
-   - Inserts records into Docker MySQL: diagram_metadata table.
-   - Generates lesson-wise HTML worksheets and uploads directly into Docker MySQL: lesson_worksheets table!
+   - Inserts records with authentic English JSON descriptions directly into Docker MySQL: diagram_metadata table (0 CSV files on disk).
+   - Generates minimalist, diagram-only HTML worksheets into codebase folders: worksheet sem1/, worksheet sem2/, worksheet sem3/
 """
 
 import os
@@ -26,6 +24,8 @@ import argparse
 
 # Fix Windows console cp1252 stdout encoding for Arabic & emojis
 sys.stdout.reconfigure(encoding="utf-8")
+import cv2
+import numpy as np
 from PIL import Image
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -33,6 +33,22 @@ from db import get_db_connection as get_db
 
 load_dotenv()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# Initialize OpenCV QR Code detector (0 LLM tokens, pure computer vision)
+qr_detector = cv2.QRCodeDetector()
+
+def check_qr_code_opencv(img: Image.Image) -> bool:
+    """Detects QR codes using OpenCV without calling any LLM."""
+    try:
+        cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        has_qr, points = qr_detector.detect(cv_img)
+        if has_qr:
+            return True
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        has_qr_gray, _ = qr_detector.detect(gray)
+        return bool(has_qr_gray)
+    except Exception:
+        return False
 
 BOUNDING_BOX_PADDING_RATIO = 0.015
 
@@ -68,7 +84,11 @@ def is_noise_by_rules(img: Image.Image, description: str = "", page_num: int = 1
     if (w / h > 6.0) or (h / w > 6.0):
         return True, f"Extreme aspect ratio ({w}x{h} px) - likely a divider banner or rule line"
 
-    # 3. QR code, cover, decorative animal photos, and montage keywords
+    # 3. Pure OpenCV QR Code Detector (0 LLM Tokens)
+    if check_qr_code_opencv(img):
+        return True, "OpenCV QRCodeDetector found QR Code"
+
+    # 4. Keyword filters for decorative art, logos, banners
     desc_lower = description.lower() if description else ""
     noise_keywords = [
         "qr code", "barcode", "ministry logo", "cover page", "table of contents",
@@ -109,6 +129,7 @@ RULES:
 Also evaluate:
 - is_suitable_for_labeling: 'YES' if it contains distinct labeled components/organs/parts that students can identify or fill in. Otherwise 'NO'.
 - is_useful_for_questions: 'YES' if educational short questions or MCQs can be derived from it. Otherwise 'NO'.
+- reason: Brief 1-sentence technical justification.
 
 Respond ONLY with valid JSON:
 {
@@ -209,23 +230,23 @@ GRADE_8_SEM3_TOC = [
 SEMESTER_CONFIGS = {
     "1": {
         "title": "Grade 8 - Semester 1 (الفصل الدراسي الأول)",
-        "json_candidates": ["science_complete_layout.json", "grade_8_semester_1_science_complete_layout.json"],
+        "json_candidates": ["semester 1.json", "grade_8_semester_1_science_complete_layout.json", "science_complete_layout.json"],
         "output_dir": "output_diagrams_sem1",
-        "csv_path": "diagrams_metadata_sem1.csv",
+        "worksheet_dir": "worksheet sem1",
         "toc": GRADE_8_SEM1_TOC,
     },
     "2": {
         "title": "Grade 8 - Semester 2 (الفصل الدراسي الثاني)",
-        "json_candidates": ["document (4).json", "document (3).json", "grade_8_semester_2_science_complete_layout.json"],
+        "json_candidates": ["semester 2.json", "grade_8_semester_2_science_complete_layout.json", "document (4).json"],
         "output_dir": "output_diagrams_sem2",
-        "csv_path": "diagrams_metadata_sem2.csv",
+        "worksheet_dir": "worksheet sem2",
         "toc": GRADE_8_SEM2_TOC,
     },
     "3": {
         "title": "Grade 8 - Semester 3 (الفصل الدراسي الثالث)",
-        "json_candidates": ["document (3).json", "grade_8_semester_3_science_complete_layout.json"],
+        "json_candidates": ["semester 3.json", "grade_8_semester_3_science_complete_layout.json", "document (3).json"],
         "output_dir": "output_diagrams_sem3",
-        "csv_path": "diagrams_metadata_sem3.csv",
+        "worksheet_dir": "worksheet sem3",
         "toc": GRADE_8_SEM3_TOC,
     },
 }
@@ -249,12 +270,41 @@ class PageImageManager:
             if asset_id and content:
                 self.blob_map[asset_id] = content
 
+        # Map blobAssetIds to descriptions from chunkedDocument
+        self.blob_desc_map = {}
+        for c in doc_data.get("chunkedDocument", {}).get("chunks", []):
+            for cf in c.get("chunkFields", []):
+                icf = cf.get("imageChunkField")
+                if icf and "blobAssetId" in icf:
+                    b_id = icf["blobAssetId"]
+                    ann = icf.get("annotations", {})
+                    if isinstance(ann, dict) and ann.get("description"):
+                        self.blob_desc_map[b_id] = ann["description"]
+                    elif isinstance(icf.get("description"), str) and icf.get("description"):
+                        self.blob_desc_map[b_id] = icf["description"]
+
         self.page_base64_map = {}
         for page in doc_data.get("pages", []):
             page_num = page.get("pageNumber")
             content = page.get("image", {}).get("content")
             if page_num and content:
                 self.page_base64_map[page_num] = content
+
+    def get_description_for_block(self, block: dict) -> str:
+        """Extracts the authentic description directly from Document AI JSON."""
+        ib = block.get("imageBlock", {})
+        # 1. Direct description field on imageBlock
+        if ib.get("description"):
+            return ib["description"].strip()
+        # 2. Description in imageBlock annotations
+        ann = ib.get("annotations", {})
+        if isinstance(ann, dict) and ann.get("description"):
+            return ann["description"].strip()
+        # 3. Lookup via blobAssetId in chunkedDocument
+        blob_id = ib.get("blobAssetId")
+        if blob_id and blob_id in self.blob_desc_map:
+            return self.blob_desc_map[blob_id].strip()
+        return ""
 
     def get_image_for_block(self, block: dict) -> Image.Image | None:
         ib = block.get("imageBlock", {})
@@ -285,77 +335,97 @@ def flatten_layout_blocks(blocks: list) -> list:
         sub_blocks = b.get("blocks", [])
         if sub_blocks:
             flat.extend(flatten_layout_blocks(sub_blocks))
+        text_sub_blocks = b.get("textBlock", {}).get("blocks", [])
+        if text_sub_blocks:
+            flat.extend(flatten_layout_blocks(text_sub_blocks))
     return flat
 
 # ==============================================================================
-# HTML WORKSHEET GENERATOR (Saved to MySQL)
+# HTML WORKSHEET GENERATOR (Saved to Local Codebase Folders)
 # ==============================================================================
 
-def generate_lesson_html_worksheet(lesson_name: str, unit_name: str, chapter_name: str, semester: int, diagrams: list) -> str:
+def generate_worksheet_index(title: str, semester: int, lesson_files: list) -> str:
+    links_html = ""
+    for lesson_idx, (lesson_label, filename, diag_count) in enumerate(lesson_files, start=1):
+        links_html += f"""
+        <div class="lesson-card">
+          <div class="card-info">
+            <h3>{lesson_label}</h3>
+          </div>
+          <a href="{filename}" class="btn-open">View Diagrams &rarr;</a>
+        </div>
+        """
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Worksheets - Semester {semester}</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px 20px; margin: 0; }}
+    .container {{ max-width: 800px; margin: 0 auto; }}
+    .header {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }}
+    .header h1 {{ margin: 0; color: #0f172a; font-size: 1.5rem; font-weight: 600; }}
+    .lesson-grid {{ display: flex; flex-direction: column; gap: 12px; }}
+    .lesson-card {{ background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s ease; }}
+    .lesson-card:hover {{ border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }}
+    .card-info h3 {{ margin: 0; font-size: 1.1rem; font-weight: 500; color: #1e293b; }}
+    .btn-open {{ background: #0f172a; color: white; text-decoration: none; padding: 8px 18px; border-radius: 6px; font-weight: 500; font-size: 0.9rem; }}
+    .btn-open:hover {{ background: #334155; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Semester {semester}</h1>
+    </div>
+    <div class="lesson-grid">
+      {links_html}
+    </div>
+  </div>
+</body>
+</html>"""
+
+def generate_lesson_html_worksheet(lesson_label: str, semester: int, diagrams: list) -> str:
     """
-    Generates a sleek, interactive HTML worksheet for a specific lesson
-    to be stored directly in MySQL lesson_worksheets table.
+    Generates a clean, distraction-free HTML worksheet featuring ONLY the authentic diagrams.
+    No side descriptions, no notes boxes.
     """
     cards_html = ""
     for idx, d in enumerate(diagrams, start=1):
+        img_src = f"../{d['image_path'].replace('\\\\', '/')}"
         cards_html += f"""
-        <div class="worksheet-card">
-          <div class="card-header">
-            <h4>Diagram #{idx}: {d['image_filename']}</h4>
-            <div class="badges">
-              <span class="badge {'badge-yes' if d['is_suitable_for_labeling'] == 'YES' else 'badge-no'}">
-                Labeling: {d['is_suitable_for_labeling']}
-              </span>
-              <span class="badge {'badge-yes' if d['is_useful_for_questions'] == 'YES' else 'badge-no'}">
-                Questions: {d['is_useful_for_questions']}
-              </span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="img-box">
-              <img src="/{d['image_path'].replace('\\\\', '/')}" alt="Diagram #{idx}">
-            </div>
-            <div class="info-box">
-              <p><strong>Description:</strong> {d.get('description', 'N/A')}</p>
-              <p><strong>Suitability Reason:</strong> {d.get('suitability_reason', 'N/A')}</p>
-              <div class="action-box">
-                <label>Student Notes / Label Answers:</label>
-                <textarea placeholder="Write answers or labels for this diagram..."></textarea>
-              </div>
-            </div>
-          </div>
+        <div class="diagram-card">
+          <img src="{img_src}" alt="Diagram #{idx}">
         </div>
         """
 
     html = f"""<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ورقة عمل: {lesson_name}</title>
+  <title>{lesson_label}</title>
   <style>
-    body {{ font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8fafc; color: #1e293b; padding: 24px; direction: rtl; }}
-    .header {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; }}
-    .header h2 {{ margin: 0 0 6px 0; color: #0f172a; }}
-    .header p {{ margin: 0; color: #64748b; font-size: 0.9rem; }}
-    .worksheet-card {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; overflow: hidden; }}
-    .card-header {{ background: #f1f5f9; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }}
-    .card-header h4 {{ margin: 0; font-size: 1rem; color: #334155; }}
-    .badges {{ display: flex; gap: 8px; }}
-    .badge {{ padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }}
-    .badge-yes {{ background: #dcfce7; color: #15803d; }}
-    .badge-no {{ background: #fee2e2; color: #b91c1c; }}
-    .card-body {{ display: grid; grid-template-columns: 45% 55%; gap: 20px; padding: 20px; }}
-    .img-box img {{ max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; }}
-    .info-box {{ display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem; }}
-    .action-box textarea {{ width: 100%; height: 90px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px 20px; margin: 0; }}
+    .container {{ max-width: 900px; margin: 0 auto; }}
+    .header {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }}
+    .header h1 {{ margin: 0; font-size: 1.5rem; font-weight: 600; color: #0f172a; }}
+    .back-link {{ color: #475569; text-decoration: none; font-size: 0.9rem; font-weight: 500; }}
+    .back-link:hover {{ color: #0f172a; text-decoration: underline; }}
+    .diagram-list {{ display: flex; flex-direction: column; gap: 24px; }}
+    .diagram-card {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; display: flex; justify-content: center; align-items: center; }}
+    .diagram-card img {{ max-width: 100%; height: auto; object-fit: contain; border-radius: 6px; }}
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>ورقة عمل: {lesson_name}</h2>
-    <p>الفصل الدراسي {semester} • {unit_name} • {chapter_name} • {len(diagrams)} رسومات علمية</p>
+  <div class="container">
+    <div class="header">
+      <h1>{lesson_label}</h1>
+      <a href="index.html" class="back-link">&larr; Back to Index</a>
+    </div>
+    <div class="diagram-list">
+      {cards_html}
+    </div>
   </div>
-  {cards_html}
 </body>
 </html>"""
     return html
@@ -437,15 +507,18 @@ def run_pipeline(sem_key: str, force: bool = False):
         if not diagram_img:
             continue
 
+        # Fetch authentic description directly from Document AI JSON
+        json_desc = page_manager.get_description_for_block(block)
+
         # 2. Fast Rule-Based Filters (QR codes, dividers, small icons, preface)
-        is_noise, noise_reason = is_noise_by_rules(diagram_img, description, page_num=page_num)
+        is_noise, noise_reason = is_noise_by_rules(diagram_img, json_desc, page_num=page_num)
         if is_noise:
             filtered_count += 1
             print(f"  [RULE REJECTED] Page {page_num}: {noise_reason}")
             continue
 
         # 3. Multimodal Vision Gatekeeper (Passes actual Base64 image to AI)
-        decision = vision_gatekeeper(diagram_img, description)
+        decision = vision_gatekeeper(diagram_img, json_desc)
         if not decision.get("should_keep", False):
             filtered_count += 1
             print(f"  [AI REJECTED] Page {page_num}: {decision.get('reason')}")
@@ -465,7 +538,7 @@ def run_pipeline(sem_key: str, force: bool = False):
             "unit": unit_title,
             "chapter": chapter_title,
             "lesson": lesson_title,
-            "description": description,
+            "description": json_desc,
             "image_filename": filename,
             "image_path": filepath.replace("\\", "/"),
             "resolution": resolution_str,
@@ -477,22 +550,11 @@ def run_pipeline(sem_key: str, force: bool = False):
 
         print(f"  ✅ [APPROVED #{diagram_count}] Page {page_num}: {filename}")
         print(f"     Lesson: {lesson_title}")
+        print(f"     Description (JSON): {json_desc[:60]}..." if json_desc else "     Description: N/A")
         print(f"     Labeling: {record['is_suitable_for_labeling']} | Questions: {record['is_useful_for_questions']}")
 
-    # 5. Save to Excel CSV (UTF-8-BOM)
-    print(f"\nWriting Excel CSV to {csv_path}...")
-    headers = [
-        "semester", "unit", "chapter", "lesson", "description",
-        "image_filename", "image_path", "resolution",
-        "is_suitable_for_labeling", "is_useful_for_questions", "suitability_reason"
-    ]
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f_csv:
-        writer = csv.DictWriter(f_csv, fieldnames=headers)
-        writer.writeheader()
-        writer.writerows(metadata_records)
-
-    # 6. Save Metadata to Docker MySQL (diagram_metadata table)
-    print("Uploading diagram metadata to Docker MySQL...")
+    # 5. Save Metadata directly to Docker MySQL (diagram_metadata table)
+    print("\nUploading diagram metadata to Docker MySQL...")
     try:
         conn = get_db()
         with conn.cursor() as cur:
@@ -510,12 +572,15 @@ def run_pipeline(sem_key: str, force: bool = False):
                     r["is_suitable_for_labeling"], r["is_useful_for_questions"], r["suitability_reason"]
                 ))
         conn.close()
-        print("  -> MySQL diagram_metadata upload complete!")
+        print("  -> MySQL diagram_metadata upload complete with authentic JSON descriptions!")
     except Exception as e:
         print(f"  [MySQL Metadata Upload Warning] {e}")
 
-    # 7. Group by Lesson, Generate Worksheets & Upload to Docker MySQL (lesson_worksheets table)
-    print("Generating lesson-wise worksheets and uploading to Docker MySQL...")
+    # 6. Group by Lesson & Generate Worksheets into Codebase Folders (worksheet semX)
+    worksheet_dir = cfg["worksheet_dir"]
+    os.makedirs(worksheet_dir, exist_ok=True)
+    print(f"\nGenerating lesson-wise HTML worksheets in folder: '{worksheet_dir}/'...")
+
     lessons_grouped = {}
     for r in metadata_records:
         l = r["lesson"]
@@ -523,38 +588,32 @@ def run_pipeline(sem_key: str, force: bool = False):
             lessons_grouped[l] = []
         lessons_grouped[l].append(r)
 
-    try:
-        conn = get_db()
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM lesson_worksheets WHERE semester = %s;", (int(sem_key),))
-            for lesson_name, diag_list in lessons_grouped.items():
-                first = diag_list[0]
-                ws_html = generate_lesson_html_worksheet(
-                    lesson_name=lesson_name,
-                    unit_name=first["unit"],
-                    chapter_name=first["chapter"],
-                    semester=int(sem_key),
-                    diagrams=diag_list
-                )
-                cur.execute("""
-                INSERT INTO lesson_worksheets (
-                    semester, unit, chapter, lesson, diagram_count, worksheet_html
-                ) VALUES (%s, %s, %s, %s, %s, %s)
-                """, (
-                    int(sem_key), first["unit"], first["chapter"], lesson_name, len(diag_list), ws_html
-                ))
-        conn.close()
-        print(f"  -> Successfully uploaded {len(lessons_grouped)} lesson worksheets to Docker MySQL!")
-    except Exception as e:
-        print(f"  [MySQL Worksheets Upload Warning] {e}")
+    created_files = []
+    for lesson_idx, (lesson_name, diag_list) in enumerate(lessons_grouped.items(), start=1):
+        lesson_label = f"Lesson {lesson_idx}"
+        filename = f"lesson_{lesson_idx}.html"
+        ws_html = generate_lesson_html_worksheet(
+            lesson_label=lesson_label,
+            semester=int(sem_key),
+            diagrams=diag_list
+        )
+        ws_path = os.path.join(worksheet_dir, filename)
+        with open(ws_path, "w", encoding="utf-8") as f_ws:
+            f_ws.write(ws_html)
+        created_files.append((lesson_label, filename, len(diag_list)))
+
+    index_html = generate_worksheet_index(title, int(sem_key), created_files)
+    with open(os.path.join(worksheet_dir, "index.html"), "w", encoding="utf-8") as f_idx:
+        f_idx.write(index_html)
+    print(f"  -> Successfully generated {len(created_files)} lesson worksheets + index.html in '{worksheet_dir}/'!")
 
     print("\n" + "=" * 70)
     print(f"PIPELINE COMPLETED FOR {title}")
     print(f"  -> Total Approved Diagrams: {diagram_count}")
     print(f"  -> Total Discarded Noise: {filtered_count}")
     print(f"  -> Images Directory: {output_dir}/")
-    print(f"  -> Excel CSV: {csv_path}")
-    print(f"  -> Docker MySQL: Tables 'diagram_metadata' & 'lesson_worksheets' updated!")
+    print(f"  -> Worksheets Folder: {worksheet_dir}/ (includes index.html)")
+    print(f"  -> Docker MySQL: Table 'diagram_metadata' updated with authentic JSON descriptions!")
     print("=" * 70)
 
 if __name__ == "__main__":

@@ -206,6 +206,29 @@ def extract_lesson_text_from_pdf(semester: int, start_page: int, end_page: int, 
         print(f"[PDF Extract Error] {e}")
         return ""
 
+def retrieve_chunks_from_qdrant(query: str, semester: int, limit: int = 5) -> str:
+    """Retrieves grounded textbook chunks from Qdrant Vector DB for the semester."""
+    if not client:
+        return ""
+    try:
+        from qdrant_client import QdrantClient
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        qc = QdrantClient(host="localhost", port=6333)
+        emb = client.embeddings.create(input=query, model="text-embedding-3-small").data[0].embedding
+        hits = qc.query_points(
+            collection_name="grade8_science_chunks",
+            query=emb,
+            query_filter=Filter(
+                must=[FieldCondition(key="semester", match=MatchValue(value=semester))]
+            ),
+            limit=limit
+        ).points
+        chunks = [h.payload.get("text", "").strip() for h in hits if h.payload and h.payload.get("text")]
+        return "\n\n---\n\n".join(chunks)
+    except Exception as e:
+        print(f"[Qdrant Retrieval Warning] {e}")
+        return ""
+
 # ==============================================================================
 # PYDANTIC SCHEMAS
 # ==============================================================================
@@ -222,13 +245,17 @@ class ChatRequest(BaseModel):
 
 class TheoryAssessmentRequest(BaseModel):
     semester: int
-    lesson: str
+    lesson: Optional[str] = None
+    topic: Optional[str] = None
+    question_type: Optional[str] = "both"  # "mcq", "short", "both"
     num_mcq: Optional[int] = 5
     num_short: Optional[int] = 3
 
 class DiagramAssessmentRequest(BaseModel):
     semester: int
     lesson: Optional[str] = "all"
+    topic: Optional[str] = None
+    num_questions: Optional[int] = 3
 
 # ==============================================================================
 # API ENDPOINTS
@@ -337,26 +364,107 @@ def get_diagram_assessment(req: DiagramAssessmentRequest):
     """
     Option 2: Diagram-Based Assessment.
     Retrieves approved, high-resolution scientific diagrams with interactive question cards
-    (Short question, MCQ with 4 choices, and Reasoning question with explanations).
+    generated dynamically based on visual elements and authentic Document AI descriptions.
     """
-    all_diagrams = load_diagrams_bank(req.semester)
-    if not all_diagrams:
-        raise HTTPException(status_code=404, detail=f"No diagrams found for semester {req.semester}")
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            if req.lesson and req.lesson != "all":
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path, resolution,
+                           is_suitable_for_labeling, is_useful_for_questions
+                    FROM diagram_metadata
+                    WHERE semester = %s AND lesson = %s AND is_useful_for_questions = 'YES'
+                    ORDER BY id LIMIT 3;
+                """, (req.semester, req.lesson))
+            else:
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path, resolution,
+                           is_suitable_for_labeling, is_useful_for_questions
+                    FROM diagram_metadata
+                    WHERE semester = %s AND is_useful_for_questions = 'YES'
+                    ORDER BY id LIMIT 3;
+                """, (req.semester,))
+            rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"[MySQL Diagram Fetch Warning] {e}")
+        rows = []
 
-    if req.lesson and req.lesson != "all":
-        filtered = [d for d in all_diagrams if d["lesson"] == req.lesson]
-        if not filtered:
-            # If no diagrams directly for this exact lesson title, return all or top relevant
-            filtered = all_diagrams[:6]
-    else:
-        filtered = all_diagrams
+    if not rows:
+        rows = load_diagrams_bank(req.semester)[:3]
+
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"No approved diagrams found for semester {req.semester}")
+
+    cards = []
+    for r in rows:
+        img_rel = r.get("image_path", "").replace("\\", "/")
+        if not img_rel.startswith("/"):
+            img_rel = "/" + img_rel
+
+        desc = r.get("description", "Scientific textbook diagram")
+        lesson_name = r.get("lesson", "Science Lesson")
+
+        prompt = f"""You are an educational assessment author inspecting this Saudi Grade 8 Science diagram.
+DIAGRAM CONTEXT:
+- Lesson: {lesson_name}
+- Detailed Description: {desc}
+
+INSTRUCTIONS:
+Generate 3 distinct visual-based questions that test student comprehension of this specific illustration:
+1. Short Question: Direct question asking about a key component or process visible in the diagram.
+2. MCQ: 4 choices (A, B, C, D), correct option, and concise explanation.
+3. Scientific Reasoning Question: A 'Why' or 'How' question based on the mechanism shown in the diagram, with detailed answer.
+
+OUTPUT FORMAT: Return ONLY valid JSON:
+{{
+  "short_question": {{"question": "...", "answer": "..."}},
+  "mcq": {{
+    "question": "...",
+    "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+    "correct": "A",
+    "explanation": "..."
+  }},
+  "reasoning_question": {{"question": "...", "answer": "..."}}
+}}"""
+
+        try:
+            res = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                temperature=0.2
+            )
+            q_data = json.loads(res.choices[0].message.content)
+        except Exception:
+            q_data = {
+                "short_question": {"question": f"What key component or process is depicted in this {lesson_name} diagram?", "answer": desc[:200]},
+                "mcq": {
+                    "question": f"Based on this diagram of {lesson_name}, which component is primarily highlighted?",
+                    "options": {"A": "Core active organ/component", "B": "Inactive membrane", "C": "External artifact", "D": "Support boundary"},
+                    "correct": "A",
+                    "explanation": "Derived directly from the diagram structure."
+                },
+                "reasoning_question": {"question": f"Why is this mechanism critical in {lesson_name}?", "answer": "It facilitates the fundamental physiological/physical transport or reaction."}
+            }
+
+        cards.append({
+            "id": f"diag_{r.get('id', 1)}",
+            "lesson": lesson_name,
+            "description": desc,
+            "image_url": img_rel,
+            "short_question": q_data.get("short_question", {}),
+            "mcq": q_data.get("mcq", {}),
+            "reasoning_question": q_data.get("reasoning_question", {})
+        })
 
     return {
         "assessment_type": "diagram",
         "semester": req.semester,
         "lesson": req.lesson,
-        "total_cards": len(filtered),
-        "cards": filtered
+        "total_cards": len(cards),
+        "cards": cards
     }
 
 
@@ -364,99 +472,62 @@ def get_diagram_assessment(req: DiagramAssessmentRequest):
 def generate_theory_assessment(req: TheoryAssessmentRequest):
     """
     Option 1: General Theory Assessment.
-    Grounded in the official Grade 8 textbook text extracted from PDF.
-    Caches directly into Docker MySQL 'theory_assessments' table!
+    Grounded strictly via Qdrant Vector DB chunks.
+    Dynamically authors MCQs and Short Questions as requested by the teacher.
     """
-    # 1. Check MySQL cache first
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT assessment_json, diagram_url FROM theory_assessments WHERE semester = %s AND lesson = %s LIMIT 1",
-                (req.semester, req.lesson)
-            )
-            cached_row = cur.fetchone()
-        conn.close()
+    topic_query = req.topic or req.lesson or "General Science"
 
-        if cached_row and cached_row.get("assessment_json"):
-            data = cached_row["assessment_json"]
-            if isinstance(data, str):
-                data = json.loads(data)
-            data["cached"] = True
-            data["diagram_url"] = cached_row.get("diagram_url")
-            return data
-    except Exception as e:
-        print(f"[MySQL Cache Check Warning] {e}")
+    # 1. Retrieve grounded textbook chunks from Qdrant Vector DB
+    grounded_chunks = retrieve_chunks_from_qdrant(topic_query, req.semester, limit=5)
 
-    # 2. Find TOC lesson boundaries
-    toc_list = TOC_REGISTRIES.get(req.semester, [])
-    lesson_meta = next((item for item in toc_list if item["lesson"] == req.lesson), None)
+    # Fallback to PDF if Qdrant returned nothing (e.g. docker just restarted)
+    if not grounded_chunks or len(grounded_chunks) < 50:
+        toc_list = TOC_REGISTRIES.get(req.semester, [])
+        lesson_meta = next((item for item in toc_list if item["lesson"] == req.lesson), None)
+        if lesson_meta:
+            grounded_chunks = extract_lesson_text_from_pdf(req.semester, lesson_meta["start_page"], lesson_meta["end_page"])
 
-    if not lesson_meta:
-        # Fallback to the first content lesson
-        lesson_meta = toc_list[2] if len(toc_list) > 2 else {"start_page": 10, "end_page": 25, "unit": "General", "chapter": "General", "lesson": req.lesson}
+    if not grounded_chunks:
+        grounded_chunks = f"Grade 8 Science curriculum topic: {topic_query}."
 
-    # 3. Find diagram for this lesson if available
-    all_diags = load_diagrams_bank(req.semester)
-    matching_diags = [d for d in all_diags if d.get("lesson") == req.lesson]
-    diagram_url = matching_diags[0]["image_url"] if matching_diags else None
-    diagram_caption = matching_diags[0].get("short_question", {}).get("question", "") if matching_diags else ""
-
-    # 4. Extract grounded textbook text from the PDF
-    lesson_text = extract_lesson_text_from_pdf(req.semester, lesson_meta["start_page"], lesson_meta["end_page"])
-
-    if not lesson_text or len(lesson_text) < 100:
-        lesson_text = f"Curriculum topic: Grade 8 Science - {req.lesson}. Unit: {lesson_meta.get('unit')}, Chapter: {lesson_meta.get('chapter')}."
-
-    # 5. Generate with OpenAI gpt-4o-mini
     if not client:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured on backend.")
 
-    diagram_instruction = ""
-    if diagram_url:
-        diagram_instruction = f"""
-NOTE: An authentic textbook diagram ({diagram_url}) is displayed directly above this assessment for the student to examine.
-Please ensure at least 2 of the MCQs and 1 short question directly prompt the student to inspect this diagram (e.g., "Referring to the diagram above, what does...").
-"""
+    num_mcqs = req.num_mcq if req.question_type in ["mcq", "both"] else 0
+    num_short = req.num_short if req.question_type in ["short", "both"] else 0
+    if num_mcqs == 0 and num_short == 0:
+        num_mcqs = 5
 
-    system_prompt = f"""You are a Master Middle-School Science Teacher creating an official assessment for Grade 8 Science students based on the Saudi Ministry of Education curriculum.
+    system_prompt = f"""You are an expert Grade 8 Science Teacher creating an official assessment based on the Saudi Ministry of Education curriculum.
 
 CURRICULUM TOPIC:
 - Semester: {req.semester}
-- Unit: {lesson_meta.get('unit')}
-- Chapter: {lesson_meta.get('chapter')}
-- Lesson: {lesson_meta.get('lesson')} (Pages {lesson_meta.get('start_page')} to {lesson_meta.get('end_page')})
-{diagram_instruction}
+- Topic / Lesson: {topic_query}
 
-GROUNDED LESSON TEXT:
-\"\"\"{lesson_text[:8000]}\"\"\"
+GROUNDED TEXTBOOK CHUNKS (From Qdrant Vector DB):
+\"\"\"{grounded_chunks[:8000]}\"\"\"
 
 INSTRUCTIONS:
-1. Generate an assessment with exactly:
-   - 5 Multiple Choice Questions (MCQs): Each with 4 clear choices (A, B, C, D), correct option letter, and a concise educational explanation.
-   - 3 Short Answer Questions: Clear, concept-focused questions with a model answer and key learning concept.
-2. LANGUAGE:
-   - Write all questions, options, and explanations in clear, accessible English appropriate for Grade 8 students.
-   - For key scientific terminology, include the official Arabic term in brackets, for example: "Solvent (المذيب)", "Solute (المذاب)", "Acids (الأحماض)", "Photosynthesis (البناء الضوئي)".
-3. GROUNDING:
-   - Base all questions strictly on facts from this Grade 8 lesson. Do NOT hallucinate concepts outside this middle-school lesson.
+1. Generate an assessment strictly from the grounded chunks above with:
+   - Exactly {num_mcqs} Multiple Choice Questions (MCQs): Each with 4 choices (A, B, C, D), correct option letter, and clear educational explanation.
+   - Exactly {num_short} Short Answer Questions: Concept questions with a model answer and key learning concept.
+2. LANGUAGE & TERMS:
+   - Questions and options in accessible English for 8th-grade students.
+   - For key scientific concepts, include official Arabic terminology in brackets (e.g. "Solvent (المذيب)", "Circulatory System (جهاز الدوران)").
+3. STRICT GROUNDING:
+   - Base all questions strictly on facts from the provided text chunks. Do NOT hallucinate concepts outside this textbook material.
 
-OUTPUT FORMAT: Return ONLY valid JSON with no markdown fences, matching this exact schema:
+OUTPUT FORMAT: Return ONLY valid JSON with this exact schema:
 {{
-  "title": "Grade 8 Assessment: <Lesson Title in English> (<Lesson Title in Arabic>)",
-  "lesson": "{req.lesson}",
-  "unit": "{lesson_meta.get('unit')}",
-  "chapter": "{lesson_meta.get('chapter')}",
+  "title": "Grade 8 Assessment: {topic_query}",
+  "topic": "{topic_query}",
+  "lesson": "{req.lesson or topic_query}",
+  "semester": {req.semester},
   "mcqs": [
     {{
       "id": 1,
       "question": "...",
-      "options": {{
-        "A": "...",
-        "B": "...",
-        "C": "...",
-        "D": "..."
-      }},
+      "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
       "correct": "A",
       "explanation": "..."
     }}
@@ -485,27 +556,9 @@ OUTPUT FORMAT: Return ONLY valid JSON with no markdown fences, matching this exa
         data = json.loads(content)
         data["assessment_type"] = "theory"
         data["semester"] = req.semester
-        data["diagram_url"] = diagram_url
-        data["cached"] = False
-
-        # Save to Docker MySQL theory_assessments table
-        try:
-            conn = get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO theory_assessments (semester, lesson, diagram_url, assessment_json)
-                    VALUES (%s, %s, %s, %s)
-                    """,
-                    (req.semester, req.lesson, diagram_url, json.dumps(data, ensure_ascii=False))
-                )
-            conn.close()
-        except Exception as db_err:
-            print(f"[MySQL Insert Warning] {db_err}")
-
         return data
     except Exception as e:
-        print(f"[OpenAI Generation Error] {e}")
+        print(f"[OpenAI Theory Assessment Error] {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate assessment: {str(e)}")
 
 

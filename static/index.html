@@ -84,10 +84,37 @@
       </div>
 
       <div>
-        <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Select Lesson:</label>
-        <select id="modalLessonDropdown" class="select-clean">
+        <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Select Lesson / Topic:</label>
+        <select id="modalLessonDropdown" class="select-clean" style="margin-bottom: 10px;">
           <option value="">Loading lessons...</option>
         </select>
+        <input 
+          type="text" 
+          id="modalCustomTopic" 
+          class="chat-input" 
+          style="padding: 10px; font-size: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); width: 100%; margin-bottom: 12px;" 
+          placeholder="Or type custom topic (e.g., جهاز الدوران, Heart)..."
+        >
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div id="typeSelectWrapper">
+          <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Question Type:</label>
+          <select id="modalQuestionType" class="select-clean">
+            <option value="mcq">MCQs Only</option>
+            <option value="short">Short Questions</option>
+            <option value="both" selected>Both MCQs & Short</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Questions Count:</label>
+          <select id="modalQuestionCount" class="select-clean">
+            <option value="3">3 Questions</option>
+            <option value="5" selected>5 Questions</option>
+            <option value="10">10 Questions</option>
+          </select>
+        </div>
       </div>
 
       <button class="btn-assessment-action" style="padding: 12px;" onclick="confirmStartAssessment()">
