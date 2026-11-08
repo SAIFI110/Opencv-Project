@@ -1,7 +1,10 @@
 .env
-venv/
+.venv/
 env/
 __pycache__/
-output_diagrams/
-diagrams_metadata.csv
+cached_theory_questions/
 *.json
+!manifest.json
+diagram_questions_multimodal_cache_*.json
+*.csv
+*.pdf

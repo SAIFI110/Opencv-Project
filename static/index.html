@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 8 Science</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- Minimal Sidebar (ChatGPT style) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-title">
+        <span>🔬</span> Grade 8 Science
+      </div>
+    </div>
+
+    <button class="btn-new-chat" onclick="resetChat()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      New Chat
+    </button>
+
+    <div class="sidebar-section-title">Semester</div>
+    <div class="semester-pills">
+      <button id="pillSem1" class="pill-item active" onclick="switchSemester(1)">Semester 1</button>
+      <button id="pillSem2" class="pill-item" onclick="switchSemester(2)">Semester 2</button>
+      <button id="pillSem3" class="pill-item" onclick="switchSemester(3)">Semester 3</button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="btn-assessment-action" onclick="openAssessmentModal()">
+        <span>✨</span> Create Assessment
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Chat Flow -->
+  <main class="main-wrapper">
+    <div id="chatScrollArea" class="chat-scroll-area">
+      <div class="container-narrow" id="messagesContainer">
+        <!-- Clean Blank Canvas (No clutter, no greeting chips) -->
+      </div>
+    </div>
+
+    <!-- Floating Clean Input Bar -->
+    <div class="input-dock">
+      <div class="input-box-wrapper">
+        <input 
+          type="text" 
+          id="chatInput" 
+          class="chat-input" 
+          placeholder="Ask anything about your science textbook..." 
+          autocomplete="off"
+          onkeydown="if(event.key === 'Enter') sendChatMessage()"
+        >
+        <button id="btnSend" class="btn-send" onclick="sendChatMessage()" title="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Minimal Assessment Launcher Modal -->
+  <div id="assessmentModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create Assessment</h3>
+        <button class="modal-close" onclick="closeAssessmentModal()">✕</button>
+      </div>
+
+      <div class="type-selector-tabs">
+        <button id="tabTheory" class="type-tab active" onclick="setModalTab('theory')">Theory Quiz</button>
+        <button id="tabDiagram" class="type-tab" onclick="setModalTab('diagram')">Diagram Quiz</button>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Select Lesson:</label>
+        <select id="modalLessonDropdown" class="select-clean">
+          <option value="">Loading lessons...</option>
+        </select>
+      </div>
+
+      <button class="btn-assessment-action" style="padding: 12px;" onclick="confirmStartAssessment()">
+        Start Assessment
+      </button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
