@@ -1,3 +1,4 @@
+
 """
 Educational Diagram Evaluator & Per-Lesson Worksheet Generator
 ==============================================================
@@ -27,6 +28,7 @@ import argparse
 from collections import OrderedDict
 from dotenv import load_dotenv
 from openai import OpenAI
+from db import get_db_connection as get_db
 
 # Fix Windows console encoding for Arabic & emojis
 sys.stdout.reconfigure(encoding="utf-8")
@@ -100,53 +102,7 @@ def resolve_image_path(image_path: str, filename: str, output_dir: str = "output
 # AGENT 1: STRICT EDUCATIONAL GATEKEEPER (Call #1, Temperature 0.0)
 # ==============================================================================
 
-def gatekeeper_agent(description: str) -> dict:
-    """
-    Evaluates whether the diagram is a genuine instructional science illustration or noise/photo.
-    """
-    if not description or len(description.strip()) < 10:
-        return {"is_useful": False, "reason": "Empty description"}
-
-    system_prompt = (
-        "You are a strict Senior Science Textbook Inspector.\n"
-        "Analyze the image description and determine if it should be KEPT as an instructional science diagram or REJECTED.\n\n"
-        "RULES:\n"
-        "1. REJECT (is_useful = false):\n"
-        "   - Scenery, landscapes, nature photos, animals, or horses without instructional labels.\n"
-        "   - Real-world photographs of people, food, or objects without educational diagrams.\n"
-        "   - Book cover art, preface decorative graphics, badges, chapter banners.\n"
-        "   - Visuals that do not teach an 8th-grade science curriculum mechanism.\n\n"
-        "2. KEEP (is_useful = true):\n"
-        "   - Annotated anatomical diagrams (heart, lungs, cells, eye, leaf cross-section).\n"
-        "   - Scientific graphs and charts with data axes (solubility curve, growth chart).\n"
-        "   - Laboratory apparatus setups (beakers, distillation, titration).\n"
-        "   - Flowcharts, cycles, and process models (refrigeration cycle, waves, atom models).\n\n"
-        "Respond ONLY with valid JSON:\n"
-        "{\n"
-        '  "is_useful": true or false,\n'
-        '  "reason": "Brief technical justification"\n'
-        "}"
-    )
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Image Description:\n{description[:1200]}"},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.0,
-        )
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        print(f"    [Gatekeeper Error]: {e}")
-        return {"is_useful": False, "reason": str(e)}
-
-
-# ==============================================================================
-# AGENT 2: MULTIMODAL QUESTION AUTHOR (Base64 Image + Description -> 3 Questions)
-# ==============================================================================
+# (gatekeeper_agent removed: extract_diagrams.py already handles vision gatekeeping)
 
 def diagram_question_author_agent(lesson: str, description: str, filename: str, image_path: str = None) -> dict:
     """
@@ -268,32 +224,15 @@ def process_semester(sem_key: str):
     print(f"PROCESSING: {title.upper()} (MULTIMODAL BASE64 + PER-LESSON WORKSHEETS)")
     print("=" * 70)
 
-    with open(csv_in, "r", encoding="utf-8-sig") as f:
-        rows = list(csv.DictReader(f))
+    # 1. Fetch pre-approved diagrams directly from Docker MySQL
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM diagram_metadata WHERE semester = %s ORDER BY id;", (int(sem_key),))
+        rows = cur.fetchall()
+    conn.close()
 
-    print(f"Total candidate diagrams in CSV: {len(rows)}")
-
-    # -------------------------------------------------------------------------
-    # STEP 1: Strict Gatekeeper Evaluation (Call #1)
-    # -------------------------------------------------------------------------
-    print("\n>>> [STEP 1/3] Running Gatekeeper Agent on diagrams...")
-    approved_diagrams = []
-    discarded_count = 0
-
-    for idx, row in enumerate(rows, 1):
-        filename = row.get("image_filename", "")
-        desc = row.get("description", "")
-        lesson = row.get("lesson", "")
-
-        gate = gatekeeper_agent(desc)
-        if gate.get("is_useful", False):
-            print(f"  [{idx:02d}/{len(rows):02d}] ✅ APPROVED: {filename} ({lesson[:30]})...")
-            approved_diagrams.append(row)
-        else:
-            discarded_count += 1
-            print(f"  [{idx:02d}/{len(rows):02d}] ❌ DISCARDED: {filename} -> {gate.get('reason')}")
-
-    print(f"\nGatekeeper Summary: {len(approved_diagrams)} Approved, {discarded_count} Discarded.")
+    approved_diagrams = [r for r in rows if r.get('is_useful_for_questions', 'YES') != 'NO']
+    print(f"\n>>> Loaded {len(approved_diagrams)} approved science diagrams from Docker MySQL (diagram_metadata).\n")
 
     # -------------------------------------------------------------------------
     # STEP 2: Generate 3 Questions FOR EACH APPROVED DIAGRAM (Call #2 - Multimodal)
@@ -356,7 +295,36 @@ def process_semester(sem_key: str):
         enriched_diagrams.append(record)
 
     # -------------------------------------------------------------------------
-    # STEP 3: Save Enriched CSV (Safe with PermissionError Handling)
+    # STEP 3: Save Questions directly to Docker MySQL (diagram_questions table)
+    # -------------------------------------------------------------------------
+    print("\nUploading generated questions to Docker MySQL (diagram_questions table)...")
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            for rec in enriched_diagrams:
+                cur.execute("""
+                INSERT INTO diagram_questions (
+                    semester, unit, chapter, lesson, image_url,
+                    is_suitable_for_questions, suitability_reason,
+                    short_question, short_answer,
+                    mcq_question, mcq_options, mcq_correct, mcq_explanation,
+                    reasoning_question, reasoning_answer
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                """, (
+                    int(sem_key), rec.get("unit"), rec.get("chapter"), rec.get("lesson"), rec.get("image_path"),
+                    rec.get("is_useful_for_questions", "YES"), rec.get("suitability_reason", ""),
+                    rec.get("short_question"), rec.get("short_answer"),
+                    rec.get("mcq_question"), json.dumps(rec.get("mcq_options", {}), ensure_ascii=False),
+                    rec.get("mcq_correct_option"), rec.get("mcq_explanation"),
+                    rec.get("reasoning_question"), rec.get("reasoning_answer")
+                ))
+        conn.close()
+        print("  -> Successfully stored all diagram questions in Docker MySQL!")
+    except Exception as e:
+        print(f"  [MySQL Question Save Warning] {e}")
+
+    # -------------------------------------------------------------------------
+    # STEP 3 (Optional): Save Backup CSV
     # -------------------------------------------------------------------------
     print(f"\nWriting all diagrams with questions to CSV: {csv_out}")
     csv_headers = [

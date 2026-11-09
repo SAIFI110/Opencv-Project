@@ -1,150 +1,170 @@
-import os
-import json
-import base64
-import io
-import csv
-from PIL import Image 
-from openai import OpenAI
-from dotenv import load_dotenv
+"""
+Educational Diagram Extraction, Vision Evaluation & MySQL Pipeline
+Grade 8 Science (Saudi Curriculum)
+==================================================================
+1. Code-Level Fast Filters: Discards QR codes via OpenCV, thin lines, and tiny icons without LLM calls.
+2. Multimodal Vision Gatekeeper (gpt-4o-mini with Vision):
+   - Evaluates Base64 diagram image against 8th-grade science curriculum standards.
+   - Flags: is_suitable_for_labeling ('YES'/'NO') and is_useful_for_questions ('YES'/'NO').
+3. Storage:
+   - Saves clean PNGs to output_diagrams_semX/
+   - Inserts records with authentic English JSON descriptions directly into Docker MySQL: diagram_metadata table (0 CSV files on disk).
+   - Generates minimalist, diagram-only HTML worksheets into codebase folders: worksheet sem1/, worksheet sem2/, worksheet sem3/
+"""
 
+import os
+import io
+import re
+import sys
+import csv
+import json
+import glob
+import base64
+import argparse
+
+# Fix Windows console cp1252 stdout encoding for Arabic & emojis
+sys.stdout.reconfigure(encoding="utf-8")
+import cv2
+import numpy as np
+from PIL import Image
+from dotenv import load_dotenv
+from openai import OpenAI
+from db import get_db_connection as get_db
 
 load_dotenv()
-
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+# Initialize OpenCV QR Code detector (0 LLM tokens, pure computer vision)
+qr_detector = cv2.QRCodeDetector()
 
-# ==============================================================================
-# PIPELINE CONFIGURATION & CONSTANTS
-# ==============================================================================
+def check_qr_code_opencv(img: Image.Image) -> bool:
+    """Detects QR codes using OpenCV without calling any LLM."""
+    try:
+        cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        has_qr, points = qr_detector.detect(cv_img)
+        if has_qr:
+            return True
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        has_qr_gray, _ = qr_detector.detect(gray)
+        return bool(has_qr_gray)
+    except Exception:
+        return False
 
-# Label Padding: Add 1.5% margin around the bounding box so text pointers aren't clipped
 BOUNDING_BOX_PADDING_RATIO = 0.015
 
+
 # ==============================================================================
-# PHASE 2: HIGH-RES BASE64 DECODERS & PAGE CACHE
+# BASE64 ENCODING / DECODING
 # ==============================================================================
 
 def decode_base64_image(base64_string: str) -> Image.Image:
-    """
-    Decodes a Base64-encoded string into an in-memory PIL Image object.
-    Uses BytesIO to avoid temporary disk writes.
-    """
     image_bytes = base64.b64decode(base64_string)
     image = Image.open(io.BytesIO(image_bytes))
     return image.convert("RGB")
 
-
-def load_document_data(filepath: str) -> dict:
-    """
-    Safely opens and parses the Document AI JSON file using UTF-8 encoding.
-    """
-    print(f"[Phase 1] Loading Document AI data from: {filepath}...")
-    with open(filepath, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    pages_count = len(data.get("pages", []))
-    blobs_count = len(data.get("blobAssets", []))
-    if blobs_count > 0:
-        print(f"[Phase 1] Successfully loaded Document AI layout with {blobs_count} image assets.")
-    else:
-        print(f"[Phase 1] Successfully loaded {pages_count} pages.")
-    return data
-
-
-class PageImageManager:
-    """
-    Manages diagram image retrieval and caching.
-    Supports:
-    1. Direct blobAssets mapping (Document AI layout parser output: blob_1..blob_87).
-    2. Full-page high-definition images (OCR pages format) with bounding box crops.
-    """
-    def __init__(self, doc_data: dict):
-        self.doc_data = doc_data
-        self.page_cache = {}  # {page_number: PIL.Image}
-        self.blob_cache = {}  # {asset_id: PIL.Image}
-        
-        # 1. Map blobAssets (assetId -> base64 string)
-        self.blob_map = {}
-        for blob in doc_data.get("blobAssets", []):
-            asset_id = blob.get("assetId")
-            content = blob.get("content")
-            if asset_id and content:
-                self.blob_map[asset_id] = content
-
-        # 2. Map full pages (pageNumber -> base64 string)
-        self.page_base64_map = {}
-        for page in doc_data.get("pages", []):
-            page_num = page.get("pageNumber")
-            content = page.get("image", {}).get("content")
-            if page_num and content:
-                self.page_base64_map[page_num] = content
-
-    def get_image_for_block(self, block: dict) -> Image.Image | None:
-        """
-        Retrieves the decoded image for a specific block:
-        - If the block has a blobAssetId in blobAssets, decodes and returns it directly.
-        - Otherwise, crops from the full page image using boundingBox vertices.
-        """
-        ib = block.get("imageBlock", {})
-        blob_id = ib.get("blobAssetId")
-
-        # Strategy A: Direct blob asset (already cleanly extracted by Document AI)
-        if blob_id:
-            if blob_id in self.blob_cache:
-                return self.blob_cache[blob_id]
-            base64_content = self.blob_map.get(blob_id)
-            if base64_content:
-                img = decode_base64_image(base64_content)
-                self.blob_cache[blob_id] = img
-                return img
-
-        # Strategy B: Crop from full page image
-        page_num = block.get("pageSpan", {}).get("pageStart", 1)
-        page_img = self.get_page_image(page_num)
-        if not page_img:
-            return None
-
-        vertices = block.get("boundingBox", {}).get("normalizedVertices", [])
-        if vertices:
-            return crop_diagram_with_padding(page_img, vertices, BOUNDING_BOX_PADDING_RATIO)
-        return page_img
-
-    def get_page_image(self, page_number: int) -> Image.Image | None:
-        """
-        Retrieves the decoded full-page image for a specific page number.
-        Decodes on the first request and caches it in memory for subsequent crops.
-        """
-        if page_number in self.page_cache:
-            return self.page_cache[page_number]
-
-        base64_content = self.page_base64_map.get(page_number)
-        if not base64_content:
-            return None
-
-        page_img = decode_base64_image(base64_content)
-        self.page_cache[page_number] = page_img
-        return page_img
-
+def encode_pil_image_to_base64(img: Image.Image, format: str = "PNG") -> str:
+    buffered = io.BytesIO()
+    img.save(buffered, format=format, optimize=True)
+    return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 # ==============================================================================
-# PHASE 4: METADATA MATCHER (CHAPTERS & FIGURE CAPTIONS)
+# FAST RULE-BASED FILTERS (0 TOKENS USED)
 # ==============================================================================
 
-def load_chunks_data(filepath: str) -> list:
-    """
-    Loads RAG chunks JSON file if available, or returns an empty list.
-    """
-    if filepath and os.path.exists(filepath):
-        print(f"[Phase 4] Loading external RAG chunks from: {filepath}...")
-        with open(filepath, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+def is_noise_by_rules(img: Image.Image, description: str = "", page_num: int = 1) -> tuple[bool, str]:
+    w, h = img.size
+
+    # 1. Preface / Intro Pages filter (pages 1-7 are textbook cover and intro, no curriculum diagrams)
+    if page_num <= 7:
+        return True, f"Preface / Table of Contents page ({page_num})"
+
+    # 2. Dimension & aspect ratio filters
+    if w < 70 or h < 70:
+        return True, f"Image too small ({w}x{h} px)"
+    if (w / h > 6.0) or (h / w > 6.0):
+        return True, f"Extreme aspect ratio ({w}x{h} px) - likely a divider banner or rule line"
+
+    # 3. Pure OpenCV QR Code Detector (0 LLM Tokens)
+    if check_qr_code_opencv(img):
+        return True, "OpenCV QRCodeDetector found QR Code"
+
+    # 4. Keyword filters for decorative art, logos, banners
+    desc_lower = description.lower() if description else ""
+    noise_keywords = [
+        "qr code", "barcode", "ministry logo", "cover page", "table of contents",
+        "preface art", "horse", "horses", "desert landscape", "decorative montage", "collage"
+    ]
+    for kw in noise_keywords:
+        if kw in desc_lower:
+            return True, f"Matched noise keyword: '{kw}'"
+
+    return False, "Passed rule-based checks"
 
 # ==============================================================================
-# PHASE 4: OFFICIAL TEXTBOOK TOC REGISTRIES (GRADE 8 SCIENCE - ALL SEMESTERS)
+# MULTIMODAL VISION GATEKEEPER (gpt-4o-mini with Vision)
+# ==============================================================================
+
+def vision_gatekeeper(img: Image.Image, description: str = "") -> dict:
+    """
+    Sends actual Base64 image to gpt-4o-mini Vision to evaluate suitability for
+    labeling and scientific assessment questions.
+    """
+    base64_str = encode_pil_image_to_base64(img)
+
+    system_prompt = """You are a strict Science Educational Dataset Gatekeeper inspecting Saudi Grade 8 Science diagrams.
+Analyze the attached visual and evaluate if it should be KEPT as an instructional science illustration.
+
+RULES:
+1. REJECT (should_keep = false):
+   - Real-world photographs of people, children, meals/food, landscapes without scientific labels.
+   - Decorative borders, book cover art, generic icons.
+   - Chapter/unit opener artwork, montages, decorative animal photos (e.g., running horses, eagles, camels), scenic landscapes, or collages even if they contain a small inset diagram/molecule badge.
+   - Generic background illustrations that do not teach an 8th-grade science curriculum mechanism.
+2. KEEP (should_keep = true):
+   - Anatomical diagrams (heart, lungs, digestive system, eye, cell, skeleton).
+   - Molecular models & particle views (solutions, atoms, molecules).
+   - Scientific curves, graphs, charts (solubility, pH, velocity, temperature).
+   - Laboratory apparatus setups and physical wave/energy models.
+
+Also evaluate:
+- is_suitable_for_labeling: 'YES' if it contains distinct labeled components/organs/parts that students can identify or fill in. Otherwise 'NO'.
+- is_useful_for_questions: 'YES' if educational short questions or MCQs can be derived from it. Otherwise 'NO'.
+- reason: Brief 1-sentence technical justification.
+
+Respond ONLY with valid JSON:
+{
+  "should_keep": true/false,
+  "is_suitable_for_labeling": "YES" or "NO",
+  "is_useful_for_questions": "YES" or "NO",
+  "reason": "Brief 1-sentence technical justification"
+}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"Evaluate this textbook illustration. Context: {description[:300] if description else 'N/A'}"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_str}", "detail": "low"}}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.0
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        print(f"    [Vision Gatekeeper Error]: {e}")
+        return {"should_keep": False, "is_suitable_for_labeling": "NO", "is_useful_for_questions": "NO", "reason": str(e)}
+
+# ==============================================================================
+# OFFICIAL TABLE OF CONTENTS (TOC)
 # ==============================================================================
 
 GRADE_8_SEM1_TOC = [
-    # (start_page, end_page, unit_name, chapter_name, lesson_name)
     (1, 7, "المقدمة والتمهيد", "المقدمة وفهرس المحتويات", "تمهيد وفهرس"),
     (8, 13, "الوحدة 1: دراسة المادة", "الفصل 1: طبيعة العلم", "افتتاحية الفصل والتهيئة للقراءة"),
     (14, 21, "الوحدة 1: دراسة المادة", "الفصل 1: طبيعة العلم", "الدرس 1: أسلوب العلم"),
@@ -163,11 +183,9 @@ GRADE_8_SEM1_TOC = [
     (102, 106, "الوحدة 2: المادة والطاقة", "الفصل 4: الطاقة وتحولاتها", "الدرس 1: ما الطاقة؟"),
     (107, 115, "الوحدة 2: المادة والطاقة", "الفصل 4: الطاقة وتحولاتها", "الدرس 2: تحولات الطاقة"),
     (116, 125, "الوحدة 2: المادة والطاقة", "الفصل 4: الطاقة وتحولاتها", "استقصاء ومراجعة الفصل واختبار مقنن"),
-    (126, 200, "مصادر تعليمية", "مصادر تعليمية ومصطلحات", "مصادر تعليمية ومصطلحات علمية"),
 ]
 
 GRADE_8_SEM2_TOC = [
-    # (start_page, end_page, unit_name, chapter_name, lesson_name)
     (1, 8, "المقدمة والتمهيد", "المقدمة وفهرس المحتويات", "تمهيد وفهرس"),
     (9, 13, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "افتتاحية الفصل والتهيئة للقراءة"),
     (14, 22, "الوحدة 3: أجهزة جسم الإنسان (1)", "الفصل 5: جهازا الدوران والمناعة", "الدرس 1: جهاز الدوران"),
@@ -185,11 +203,9 @@ GRADE_8_SEM2_TOC = [
     (118, 130, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "الدرس 1: جهازا الغدد الصم والتكاثر"),
     (131, 139, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "الدرس 2: مراحل حياة الإنسان"),
     (140, 145, "الوحدة 4: أجهزة جسم الإنسان (2)", "الفصل 8: التنظيم والتكاثر", "استقصاء ومراجعة الفصل واختبار مقنن"),
-    (146, 200, "مصادر تعليمية", "مصادر تعليمية ومصطلحات", "مصادر تعليمية ومصطلحات علمية"),
 ]
 
 GRADE_8_SEM3_TOC = [
-    # (start_page, end_page, unit_name, chapter_name, lesson_name)
     (1, 8, "المقدمة والتمهيد", "المقدمة وفهرس المحتويات", "تمهيد وفهرس"),
     (9, 17, "الوحدة 5: النباتات وموارد البيئة", "الفصل 9: النباتات", "افتتاحية الفصل والتهيئة للقراءة"),
     (18, 24, "الوحدة 5: النباتات وموارد البيئة", "الفصل 9: النباتات", "الدرس 1: النباتات اللابذرية"),
@@ -209,318 +225,405 @@ GRADE_8_SEM3_TOC = [
     (114, 118, "الوحدة 6: الطاقة الحرارية والموجات", "الفصل 12: الموجات والصوت والضوء", "الدرس 2: موجات الصوت"),
     (119, 125, "الوحدة 6: الطاقة الحرارية والموجات", "الفصل 12: الموجات والصوت والضوء", "الدرس 3: الضوء"),
     (126, 134, "الوحدة 6: الطاقة الحرارية والموجات", "الفصل 12: الموجات والصوت والضوء", "استقصاء ومراجعة الفصل واختبار مقنن"),
-    (135, 200, "مصادر تعليمية", "مصادر تعليمية ومصطلحات", "مصادر تعليمية ومصطلحات علمية"),
 ]
 
 SEMESTER_CONFIGS = {
     "1": {
         "title": "Grade 8 - Semester 1 (الفصل الدراسي الأول)",
-        "json_path": "grade_8_semester_1_science_complete_layout.json",
+        "json_candidates": ["semester 1.json", "grade_8_semester_1_science_complete_layout.json", "science_complete_layout.json"],
         "output_dir": "output_diagrams_sem1",
-        "csv_path": "diagrams_metadata_sem1.csv",
+        "worksheet_dir": "worksheet sem1",
         "toc": GRADE_8_SEM1_TOC,
     },
     "2": {
         "title": "Grade 8 - Semester 2 (الفصل الدراسي الثاني)",
-        "json_path": "grade_8_semester_2_science_complete_layout.json",
+        "json_candidates": ["semester 2.json", "grade_8_semester_2_science_complete_layout.json", "document (4).json"],
         "output_dir": "output_diagrams_sem2",
-        "csv_path": "diagrams_metadata_sem2.csv",
+        "worksheet_dir": "worksheet sem2",
         "toc": GRADE_8_SEM2_TOC,
     },
     "3": {
         "title": "Grade 8 - Semester 3 (الفصل الدراسي الثالث)",
-        "json_path": "grade_8_semester_3_science_complete_layout.json",
+        "json_candidates": ["semester 3.json", "grade_8_semester_3_science_complete_layout.json", "document (3).json"],
         "output_dir": "output_diagrams_sem3",
-        "csv_path": "diagrams_metadata_sem3.csv",
+        "worksheet_dir": "worksheet sem3",
         "toc": GRADE_8_SEM3_TOC,
     },
 }
 
-
 def get_chapter_and_unit_by_page(page_number: int, toc_registry: list) -> tuple[str, str, str]:
-    """
-    Method 1: Authoritative Table of Contents (TOC) page mapping.
-    Maps a page number to its exact official Unit, Chapter, and Lesson titles.
-    Guarantees 100% clean, concise Arabic titles with zero noisy paragraph text.
-    """
-    for start_p, end_p, unit_title, chapter_title, lesson_title in toc_registry:
-        if start_p <= page_number <= end_p:
+    for start_page, end_page, unit_title, chapter_title, lesson_title in toc_registry:
+        if start_page <= page_number <= end_page:
             return unit_title, chapter_title, lesson_title
-
-    return "الوحدة العامة", "الفصل العام", "عام"
-
-
-def extract_english_description(diagram_block: dict) -> str:
-    """
-    Extracts the existing English description directly from the Document AI
-    JSON annotations (exact text, no Arabic caption matching needed).
-    """
-    image_block = diagram_block.get("imageBlock", {})
-    annotations = image_block.get("annotations", {})
-
-    # Extract the English description string from the annotations object
-    if isinstance(annotations, dict):
-        desc = annotations.get("description", "")
-    elif isinstance(annotations, list) and len(annotations) > 0:
-        desc = annotations[0].get("description", "") if isinstance(annotations[0], dict) else str(annotations[0])
-    else:
-        desc = ""
-
-    return desc.strip()
-
-
-def is_noise_by_keyword(description: str) -> tuple:
-    """
-    Fast keyword check: drop qr code and barcode 
-
-    """
-    desc_lower = description.lower()
-
-    # QR Code & Barcode keywords
-    qr_keywords = ["qr code", "barcode", "quick response", "scan pattern"]
-    for kw in qr_keywords:
-        if kw in desc_lower:
-            return True, f"Discarded: QR/Barcode found ('{kw}')"
-
-    # (Optional) Agar Ministry Logos bhi drop karne hon:
-    if "logo or graphic" in desc_lower:
-        return True, "Discarded: Logo/Graphic found"
-
-    return False, ""
+    return "الوحدة العامة", "الفصل العام", "الدرس العام"
 
 # ==============================================================================
-# OPENAI LLM FILTER ENGINE
+# DOCUMENT AI PARSER & IMAGE RETRIEVAL
 # ==============================================================================
 
-def llm_filter_diagram(description: str) -> dict:
-    
-    if not description or len(description.strip()) < 10:
-        return {"should_keep": False, "reason": "Empty description", "is_qr_code": False}
+class PageImageManager:
+    def __init__(self, doc_data: dict):
+        self.blob_map = {}
+        for blob in doc_data.get("blobAssets", []):
+            asset_id = blob.get("assetId")
+            content = blob.get("content")
+            if asset_id and content:
+                self.blob_map[asset_id] = content
 
-    system_prompt = """
-You are an expert AI evaluator for a Science Textbook educational dataset.
-Analyze the image description and decide if it should be KEPT for student learning or REJECTED.
+        # Map blobAssetIds to descriptions from chunkedDocument
+        self.blob_desc_map = {}
+        for c in doc_data.get("chunkedDocument", {}).get("chunks", []):
+            for cf in c.get("chunkFields", []):
+                icf = cf.get("imageChunkField")
+                if icf and "blobAssetId" in icf:
+                    b_id = icf["blobAssetId"]
+                    ann = icf.get("annotations", {})
+                    if isinstance(ann, dict) and ann.get("description"):
+                        self.blob_desc_map[b_id] = ann["description"]
+                    elif isinstance(icf.get("description"), str) and icf.get("description"):
+                        self.blob_desc_map[b_id] = icf["description"]
 
-RULES:
-1. REJECT (should_keep = false):
-   - Ministry logos, book covers, decorative icons, badges.
-   - Real-world photographs of random food/fruits/meals.
+        self.page_base64_map = {}
+        for page in doc_data.get("pages", []):
+            page_num = page.get("pageNumber")
+            content = page.get("image", {}).get("content")
+            if page_num and content:
+                self.page_base64_map[page_num] = content
 
-2. KEEP (should_keep = true):
-   - Anatomical diagrams (digestive system, heart, respiratory system, lungs, cells).
-   - Scientific illustrations, biological structures with labels.
+    def get_description_for_block(self, block: dict) -> str:
+        """Extracts the authentic description directly from Document AI JSON."""
+        ib = block.get("imageBlock", {})
+        # 1. Direct description field on imageBlock
+        if ib.get("description"):
+            return ib["description"].strip()
+        # 2. Description in imageBlock annotations
+        ann = ib.get("annotations", {})
+        if isinstance(ann, dict) and ann.get("description"):
+            return ann["description"].strip()
+        # 3. Lookup via blobAssetId in chunkedDocument
+        blob_id = ib.get("blobAssetId")
+        if blob_id and blob_id in self.blob_desc_map:
+            return self.blob_desc_map[blob_id].strip()
+        return ""
 
-Respond ONLY with valid JSON:
-{
-  "should_keep": true/false,
-  "reason": "Short explanation of your decision"
-}
-"""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Image Description:\n{description}"}
-            ],
-            temperature=0.0
-        )
-        content = response.choices[0].message.content
-        return json.loads(content) if content else {"should_keep": False, "reason": "Empty response from LLM", "is_qr_code": False}
-    except Exception as e:
-        print(f"  [API ERROR] {e}")
-        return {"should_keep": False, "reason": str(e), "is_qr_code": False}
+    def get_image_for_block(self, block: dict) -> Image.Image | None:
+        ib = block.get("imageBlock", {})
+        blob_id = ib.get("blobAssetId")
+        if blob_id and blob_id in self.blob_map:
+            return decode_base64_image(self.blob_map[blob_id])
 
+        page_num = block.get("pageSpan", {}).get("pageStart", 1)
+        if page_num in self.page_base64_map:
+            page_img = decode_base64_image(self.page_base64_map[page_num])
+            vertices = block.get("boundingBox", {}).get("normalizedVertices", [])
+            if vertices:
+                page_w, page_h = page_img.size
+                xs = [pt.get("x", 0.0) for pt in vertices]
+                ys = [pt.get("y", 0.0) for pt in vertices]
+                min_x = max(0.0, min(xs) - BOUNDING_BOX_PADDING_RATIO)
+                max_x = min(1.0, max(xs) + BOUNDING_BOX_PADDING_RATIO)
+                min_y = max(0.0, min(ys) - BOUNDING_BOX_PADDING_RATIO)
+                max_y = min(1.0, max(ys) + BOUNDING_BOX_PADDING_RATIO)
+                return page_img.crop((int(min_x * page_w), int(min_y * page_h), int(max_x * page_w), int(max_y * page_h)))
+            return page_img
+        return None
 
-
-# ==============================================================================
-# PHASE 5: HIGH-PRECISION CROPPER & UTF-8-BOM CSV WRITER
-# ==============================================================================
-
-def crop_diagram_with_padding(page_img: Image.Image, vertices: list, padding_ratio: float = 0.015) -> Image.Image:
-    """
-    Converts normalized vertices to pixel coordinates, applies padding to preserve
-    Arabic callout labels, and crops from the high-definition page image.
-    """
-    page_w, page_h = page_img.size
-
-    xs = [pt.get("x", 0.0) for pt in vertices]
-    ys = [pt.get("y", 0.0) for pt in vertices]
-
-    # Calculate pixel boundaries with extra safety padding
-    min_x = max(0.0, min(xs) - padding_ratio)
-    max_x = min(1.0, max(xs) + padding_ratio)
-    min_y = max(0.0, min(ys) - padding_ratio)
-    max_y = min(1.0, max(ys) + padding_ratio)
-
-    left = int(min_x * page_w)
-    top = int(min_y * page_h)
-    right = int(max_x * page_w)
-    bottom = int(max_y * page_h)
-
-    return page_img.crop((left, top, right, bottom))
-
-
-def flatten_layout_blocks(blocks: list, parent_page: int = 1) -> list:
-    """
-    Recursively flattens all nested Document AI layout blocks (e.g. inside textBlock.blocks).
-    Preserves and propagates pageSpan across the nested hierarchy.
-    """
+def flatten_layout_blocks(blocks: list) -> list:
     flat = []
     for b in blocks:
-        page = b.get("pageSpan", {}).get("pageStart", parent_page)
-        if "pageSpan" not in b:
-            b["pageSpan"] = {"pageStart": page, "pageEnd": page}
         flat.append(b)
-
-        # Recursively traverse nested blocks (e.g., inside textbook chapters)
-        nested = b.get("textBlock", {}).get("blocks")
-        if nested and isinstance(nested, list):
-            flat.extend(flatten_layout_blocks(nested, parent_page=page))
+        sub_blocks = b.get("blocks", [])
+        if sub_blocks:
+            flat.extend(flatten_layout_blocks(sub_blocks))
+        text_sub_blocks = b.get("textBlock", {}).get("blocks", [])
+        if text_sub_blocks:
+            flat.extend(flatten_layout_blocks(text_sub_blocks))
     return flat
 
+# ==============================================================================
+# HTML WORKSHEET GENERATOR (Saved to Local Codebase Folders)
+# ==============================================================================
 
-def run_pipeline(semester_key: str = "2"):
+def generate_worksheet_index(title: str, semester: int, lesson_files: list) -> str:
+    links_html = ""
+    for lesson_idx, (lesson_label, filename, diag_count) in enumerate(lesson_files, start=1):
+        links_html += f"""
+        <div class="lesson-card">
+          <div class="card-info">
+            <h3>{lesson_label}</h3>
+          </div>
+          <a href="{filename}" class="btn-open">View Diagrams &rarr;</a>
+        </div>
+        """
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Worksheets - Semester {semester}</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px 20px; margin: 0; }}
+    .container {{ max-width: 800px; margin: 0 auto; }}
+    .header {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 32px; margin-bottom: 24px; }}
+    .header h1 {{ margin: 0; color: #0f172a; font-size: 1.5rem; font-weight: 600; }}
+    .lesson-grid {{ display: flex; flex-direction: column; gap: 12px; }}
+    .lesson-card {{ background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s ease; }}
+    .lesson-card:hover {{ border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }}
+    .card-info h3 {{ margin: 0; font-size: 1.1rem; font-weight: 500; color: #1e293b; }}
+    .btn-open {{ background: #0f172a; color: white; text-decoration: none; padding: 8px 18px; border-radius: 6px; font-weight: 500; font-size: 0.9rem; }}
+    .btn-open:hover {{ background: #334155; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Semester {semester}</h1>
+    </div>
+    <div class="lesson-grid">
+      {links_html}
+    </div>
+  </div>
+</body>
+</html>"""
+
+def generate_lesson_html_worksheet(lesson_label: str, semester: int, diagrams: list) -> str:
     """
-    Main pipeline orchestrator. Executes all phases sequentially for a specific semester.
+    Generates a clean, distraction-free HTML worksheet featuring ONLY the authentic diagrams.
+    No side descriptions, no notes boxes.
     """
-    if semester_key not in SEMESTER_CONFIGS:
-        print(f"[ERROR] Unknown semester key '{semester_key}'. Choose from: {list(SEMESTER_CONFIGS.keys())}")
+    cards_html = ""
+    for idx, d in enumerate(diagrams, start=1):
+        img_src = f"../{d['image_path'].replace('\\\\', '/')}"
+        cards_html += f"""
+        <div class="diagram-card">
+          <img src="{img_src}" alt="Diagram #{idx}">
+        </div>
+        """
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{lesson_label}</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px 20px; margin: 0; }}
+    .container {{ max-width: 900px; margin: 0 auto; }}
+    .header {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }}
+    .header h1 {{ margin: 0; font-size: 1.5rem; font-weight: 600; color: #0f172a; }}
+    .back-link {{ color: #475569; text-decoration: none; font-size: 0.9rem; font-weight: 500; }}
+    .back-link:hover {{ color: #0f172a; text-decoration: underline; }}
+    .diagram-list {{ display: flex; flex-direction: column; gap: 24px; }}
+    .diagram-card {{ background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; display: flex; justify-content: center; align-items: center; }}
+    .diagram-card img {{ max-width: 100%; height: auto; object-fit: contain; border-radius: 6px; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{lesson_label}</h1>
+      <a href="index.html" class="back-link">&larr; Back to Index</a>
+    </div>
+    <div class="diagram-list">
+      {cards_html}
+    </div>
+  </div>
+</body>
+</html>"""
+    return html
+
+# ==============================================================================
+# MAIN RUN PIPELINE
+# ==============================================================================
+
+def run_pipeline(sem_key: str, force: bool = False):
+    cfg = SEMESTER_CONFIGS.get(sem_key)
+    if not cfg:
+        print(f"Invalid semester: {sem_key}")
         return
 
-    config = SEMESTER_CONFIGS[semester_key]
-    title = config["title"]
-    json_path = config["json_path"]
-    output_dir = config["output_dir"]
-    csv_path = config["csv_path"]
-    toc_registry = config["toc"]
+    title = cfg["title"]
+    output_dir = cfg["output_dir"]
+    csv_path = cfg["csv_path"]
+    toc_registry = cfg["toc"]
 
-    print("\n" + "=" * 60)
-    print(f"STARTING PIPELINE: {title}")
-    print(f"  Input JSON:   {json_path}")
-    print(f"  Output Dir:   {output_dir}/")
-    print(f"  Metadata CSV: {csv_path}")
-    print("=" * 60)
+    # Check if diagrams already exist to save tokens and prevent duplicates
+    existing_images = glob.glob(os.path.join(output_dir, "*.png"))
+    if existing_images:
+        if not force:
+            print("\n" + "=" * 70)
+            print(f"⚡ [CACHE HIT] {len(existing_images)} diagrams already extracted in '{output_dir}/'.")
+            print("   Extraction skipped to save OpenAI tokens and time.")
+            print("   (To force re-extraction from scratch, pass the '--force' flag).")
+            print("=" * 70 + "\n")
+            return
+        else:
+            print(f"\n🗑️  [FORCE RESET] Deleting {len(existing_images)} old diagrams from '{output_dir}/' to re-extract from scratch...")
+            for old_img in existing_images:
+                try:
+                    os.remove(old_img)
+                except Exception as e:
+                    print(f"    Warning: Could not remove {old_img}: {e}")
 
-    # Ensure output directory exists
+    # Resolve JSON file from candidates
+    json_path = None
+    for cand in cfg["json_candidates"]:
+        if os.path.exists(cand):
+            json_path = cand
+            break
+
+    if not json_path:
+        print(f"[Error] No JSON file found for Semester {sem_key}. Candidates checked: {cfg['json_candidates']}")
+        return
+
     os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Load Document AI JSON
-    doc_data = load_document_data(json_path)
+    print("\n" + "=" * 70)
+    print(f"STARTING VISION PIPELINE FOR: {title}")
+    print(f"JSON Source: {json_path}")
+    print(f"Output Directory: {output_dir}")
+    print("=" * 70)
 
-    # 2. Recursively flatten all layout blocks (including nested chapter blocks)
+    with open(json_path, "r", encoding="utf-8") as f:
+        doc_data = json.load(f)
+
     raw_blocks = doc_data.get("documentLayout", {}).get("blocks", [])
     all_blocks = flatten_layout_blocks(raw_blocks)
-    print(f"Total layout blocks extracted (including nested chapters): {len(all_blocks)}")
+    print(f"Total blocks in layout: {len(all_blocks)}")
 
-    # 3. Initialize Page Image Manager
     page_manager = PageImageManager(doc_data)
 
     metadata_records = []
     diagram_count = 0
     filtered_count = 0
 
-    # 4. Iterate through all layout blocks to find diagrams
-    print(f"\nScanning layout blocks for diagrams in {title}...")
-    for block in all_blocks:
+    for idx, block in enumerate(all_blocks, start=1):
         if "imageBlock" not in block:
             continue
 
         page_num = block.get("pageSpan", {}).get("pageStart", 1)
-        description = extract_english_description(block)
+        description = block.get("imageBlock", {}).get("description", "")
 
-        # ------------------------------------------------------------------
-        # NEW: FAST KEYWORD FILTER (0 Tokens Used - Cost Saved!)
-        # ------------------------------------------------------------------
-        is_noise, reason = is_noise_by_keyword(description)
-        if is_noise:
-            filtered_count += 1
-            print(f"  [FAST SKIPPED] Page {page_num}: {reason} (0 Tokens Used)")
-            continue
-
-        # 5. Description ko OpenAI LLM ke pas bhej kar filter karein
-        llm_decision = llm_filter_diagram(description)
-        if not llm_decision.get("should_keep"):
-            filtered_count += 1
-            print(f"  [LLM SKIPPED] Page {page_num}: {llm_decision.get('reason')}")
-            continue
-
-        # 6. Agar LLM ne approve kiya -> Fetch high-res diagram image
+        # 1. Fetch cropped candidate image
         diagram_img = page_manager.get_image_for_block(block)
         if not diagram_img:
-            print(f"  [WARNING] Could not load image for block on page {page_num}. Skipping.")
             continue
 
-        diagram_count += 1
+        # Fetch authentic description directly from Document AI JSON
+        json_desc = page_manager.get_description_for_block(block)
 
-        # 7. Save image to disk
+        # 2. Fast Rule-Based Filters (QR codes, dividers, small icons, preface)
+        is_noise, noise_reason = is_noise_by_rules(diagram_img, json_desc, page_num=page_num)
+        if is_noise:
+            filtered_count += 1
+            print(f"  [RULE REJECTED] Page {page_num}: {noise_reason}")
+            continue
+
+        # 3. Multimodal Vision Gatekeeper (Passes actual Base64 image to AI)
+        decision = vision_gatekeeper(diagram_img, json_desc)
+        if not decision.get("should_keep", False):
+            filtered_count += 1
+            print(f"  [AI REJECTED] Page {page_num}: {decision.get('reason')}")
+            continue
+
+        # 4. Approved! Save to disk
+        diagram_count += 1
         filename = f"diagram_page_{page_num:02d}_diag_{diagram_count:02d}.png"
         filepath = os.path.join(output_dir, filename)
         diagram_img.save(filepath, format="PNG", optimize=True)
 
-        # 8. Metadata record (Method 1: Authoritative Grade 8 TOC Mapping)
         unit_title, chapter_title, lesson_title = get_chapter_and_unit_by_page(page_num, toc_registry)
         resolution_str = f"{diagram_img.width}x{diagram_img.height}"
 
-        # Append to metadata list with clean unit, chapter & lesson fields
         record = {
+            "semester": int(sem_key),
             "unit": unit_title,
             "chapter": chapter_title,
             "lesson": lesson_title,
-            "description": description,
+            "description": json_desc,
             "image_filename": filename,
-            "image_path": filepath,
-            "resolution": resolution_str
+            "image_path": filepath.replace("\\", "/"),
+            "resolution": resolution_str,
+            "is_suitable_for_labeling": decision.get("is_suitable_for_labeling", "NO"),
+            "is_useful_for_questions": decision.get("is_useful_for_questions", "YES"),
+            "suitability_reason": decision.get("reason", "Approved Science Diagram")
         }
         metadata_records.append(record)
 
-        print(f"  [SAVED] {filename} ({resolution_str})")
-        print(f"          Unit: {unit_title} | Chapter: {chapter_title} | Lesson: {lesson_title}")
-        print(f"          Description: {description[:80]}...")
+        print(f"  ✅ [APPROVED #{diagram_count}] Page {page_num}: {filename}")
+        print(f"     Lesson: {lesson_title}")
+        print(f"     Description (JSON): {json_desc[:60]}..." if json_desc else "     Description: N/A")
+        print(f"     Labeling: {record['is_suitable_for_labeling']} | Questions: {record['is_useful_for_questions']}")
 
-    # 9. Save Metadata to CSV with UTF-8 BOM encoding
-    print(f"\nWriting metadata CSV to {csv_path}...")
-    csv_headers = ["unit", "chapter", "lesson", "description", "image_filename", "image_path", "resolution"]
+    # 5. Save Metadata directly to Docker MySQL (diagram_metadata table)
+    print("\nUploading diagram metadata to Docker MySQL...")
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM diagram_metadata WHERE semester = %s;", (int(sem_key),))
+            for r in metadata_records:
+                cur.execute("""
+                INSERT INTO diagram_metadata (
+                    semester, unit, chapter, lesson, description,
+                    image_filename, image_path, resolution,
+                    is_suitable_for_labeling, is_useful_for_questions, suitability_reason
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    r["semester"], r["unit"], r["chapter"], r["lesson"], r["description"],
+                    r["image_filename"], r["image_path"], r["resolution"],
+                    r["is_suitable_for_labeling"], r["is_useful_for_questions"], r["suitability_reason"]
+                ))
+        conn.close()
+        print("  -> MySQL diagram_metadata upload complete with authentic JSON descriptions!")
+    except Exception as e:
+        print(f"  [MySQL Metadata Upload Warning] {e}")
 
-    # 'utf-8-sig' adds the UTF-8 BOM so Microsoft Excel renders Arabic correctly
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f_csv:
-        writer = csv.DictWriter(f_csv, fieldnames=csv_headers)
-        writer.writeheader()
-        writer.writerows(metadata_records)
+    # 6. Group by Lesson & Generate Worksheets into Codebase Folders (worksheet semX)
+    worksheet_dir = cfg["worksheet_dir"]
+    os.makedirs(worksheet_dir, exist_ok=True)
+    print(f"\nGenerating lesson-wise HTML worksheets in folder: '{worksheet_dir}/'...")
 
-    print("\n" + "=" * 60)
-    print(f"PIPELINE COMPLETED FOR {title}!")
-    print(f"  -> Extracted Diagrams: {diagram_count}")
-    print(f"  -> Filtered QR Codes/Icons: {filtered_count}")
-    print(f"  -> Images saved in: '{output_dir}/'")
-    print(f"  -> Metadata saved in: '{csv_path}'")
-    print("=" * 60)
+    lessons_grouped = {}
+    for r in metadata_records:
+        l = r["lesson"]
+        if l not in lessons_grouped:
+            lessons_grouped[l] = []
+        lessons_grouped[l].append(r)
 
+    created_files = []
+    for lesson_idx, (lesson_name, diag_list) in enumerate(lessons_grouped.items(), start=1):
+        lesson_label = f"Lesson {lesson_idx}"
+        filename = f"lesson_{lesson_idx}.html"
+        ws_html = generate_lesson_html_worksheet(
+            lesson_label=lesson_label,
+            semester=int(sem_key),
+            diagrams=diag_list
+        )
+        ws_path = os.path.join(worksheet_dir, filename)
+        with open(ws_path, "w", encoding="utf-8") as f_ws:
+            f_ws.write(ws_html)
+        created_files.append((lesson_label, filename, len(diag_list)))
+
+    index_html = generate_worksheet_index(title, int(sem_key), created_files)
+    with open(os.path.join(worksheet_dir, "index.html"), "w", encoding="utf-8") as f_idx:
+        f_idx.write(index_html)
+    print(f"  -> Successfully generated {len(created_files)} lesson worksheets + index.html in '{worksheet_dir}/'!")
+
+    print("\n" + "=" * 70)
+    print(f"PIPELINE COMPLETED FOR {title}")
+    print(f"  -> Total Approved Diagrams: {diagram_count}")
+    print(f"  -> Total Discarded Noise: {filtered_count}")
+    print(f"  -> Images Directory: {output_dir}/")
+    print(f"  -> Worksheets Folder: {worksheet_dir}/ (includes index.html)")
+    print(f"  -> Docker MySQL: Table 'diagram_metadata' updated with authentic JSON descriptions!")
+    print("=" * 70)
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Educational Diagram Extraction Pipeline")
-    parser.add_argument("--sem", choices=["1", "2", "3", "all"], default=None, help="Semester to process (1, 2, 3, or all)")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sem", choices=["1", "2", "3", "all"], default="1")
+    parser.add_argument("--force", action="store_true", help="Force re-extraction even if diagrams already exist")
     args = parser.parse_args()
 
-    target = args.sem
-    if not target:
-        print("\n" + "=" * 60)
-        print("EDUCATIONAL DIAGRAM EXTRACTOR - GRADE 8 SCIENCE")
-        print("=" * 60)
-        print("Available Semesters:")
-        for k, v in SEMESTER_CONFIGS.items():
-            print(f"  [{k}] {v['title']}")
-        print("  [all] Process All Semesters Sequentially")
-        try:
-            choice = input("\nEnter choice [1, 2, 3, or all] (default: 1): ").strip().lower()
-            target = choice if choice in ["1", "2", "3", "all"] else "1"
-        except (EOFError, KeyboardInterrupt):
-            target = "1"
-
-    if target == "all":
+    if args.sem == "all":
         for s in ["1", "2", "3"]:
-            run_pipeline(s)
+            run_pipeline(s, force=args.force)
     else:
-        run_pipeline(target)
+        run_pipeline(args.sem, force=args.force)
