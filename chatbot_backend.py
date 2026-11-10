@@ -336,16 +336,43 @@ def get_worksheets_list(semester: int = Query(1, ge=1, le=3)):
 def get_curriculum(semester: int = Query(1, ge=1, le=3)):
     """
     Returns the organized curriculum hierarchy (Units & Lessons) for a given semester,
-    including the count of available diagrams per lesson.
+    including separate counts for general diagrams and interactive labeling diagrams per lesson.
     """
     toc_list = TOC_REGISTRIES.get(semester, [])
-    diag_bank = load_diagrams_bank(semester)
-
-    # Count diagrams per lesson
+    
     diag_counts = {}
-    for d in diag_bank:
-        l = d.get("lesson", "")
-        diag_counts[l] = diag_counts.get(l, 0) + 1
+    label_counts = {}
+    total_diag = 0
+    total_label = 0
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT lesson,
+                       SUM(CASE WHEN is_useful_for_questions = 'YES' THEN 1 ELSE 0 END) AS diag_cnt,
+                       SUM(CASE WHEN is_suitable_for_labeling = 'YES' AND masked_labels_json IS NOT NULL THEN 1 ELSE 0 END) AS label_cnt
+                FROM diagram_metadata
+                WHERE semester = %s
+                GROUP BY lesson;
+            """, (semester,))
+            rows = cur.fetchall()
+            for r in rows:
+                l_name = r.get("lesson") or ""
+                dc = int(r.get("diag_cnt") or 0)
+                lc = int(r.get("label_cnt") or 0)
+                diag_counts[l_name] = dc
+                label_counts[l_name] = lc
+                total_diag += dc
+                total_label += lc
+        conn.close()
+    except Exception as e:
+        print(f"[get_curriculum DB Error] {e}")
+        diag_bank = load_diagrams_bank(semester)
+        for d in diag_bank:
+            l = d.get("lesson", "")
+            diag_counts[l] = diag_counts.get(l, 0) + 1
+        total_diag = len(diag_bank)
 
     # Group into Units
     units_dict = {}
@@ -359,19 +386,23 @@ def get_curriculum(semester: int = Query(1, ge=1, le=3)):
             }
         l_name = item["lesson"]
         cnt = diag_counts.get(l_name, 0)
+        lbl_cnt = label_counts.get(l_name, 0)
         units_dict[u_name]["lessons"].append({
             "lesson_name": l_name,
             "start_page": item["start_page"],
             "end_page": item["end_page"],
             "has_diagrams": cnt > 0,
-            "diagram_count": cnt
+            "diagram_count": cnt,
+            "has_labeling": lbl_cnt > 0,
+            "labeling_count": lbl_cnt
         })
 
     return {
         "semester": semester,
         "title": f"Grade 8 - Semester {semester} Science (علوم الصف الثاني المتوسط)",
         "units": list(units_dict.values()),
-        "total_diagrams": len(diag_bank)
+        "total_diagrams": total_diag,
+        "total_labeling_diagrams": total_label
     }
 
 
@@ -382,6 +413,7 @@ def get_diagram_assessment(req: DiagramAssessmentRequest):
     Retrieves approved, high-resolution scientific diagrams with interactive question cards
     generated dynamically based on visual elements and authentic Document AI descriptions.
     """
+    num_q = req.num_questions or 3
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
@@ -391,16 +423,16 @@ def get_diagram_assessment(req: DiagramAssessmentRequest):
                            is_suitable_for_labeling, is_useful_for_questions
                     FROM diagram_metadata
                     WHERE semester = %s AND lesson = %s AND is_useful_for_questions = 'YES'
-                    ORDER BY id LIMIT 3;
-                """, (req.semester, req.lesson))
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, req.lesson, num_q))
             else:
                 cur.execute("""
                     SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path, resolution,
                            is_suitable_for_labeling, is_useful_for_questions
                     FROM diagram_metadata
                     WHERE semester = %s AND is_useful_for_questions = 'YES'
-                    ORDER BY id LIMIT 3;
-                """, (req.semester,))
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, num_q))
             rows = cur.fetchall()
         conn.close()
     except Exception as e:
@@ -408,7 +440,7 @@ def get_diagram_assessment(req: DiagramAssessmentRequest):
         rows = []
 
     if not rows:
-        rows = load_diagrams_bank(req.semester)[:3]
+        rows = load_diagrams_bank(req.semester)[:num_q]
 
     if not rows:
         raise HTTPException(status_code=404, detail=f"No approved diagrams found for semester {req.semester}")
@@ -491,6 +523,7 @@ def get_labeling_assessment(req: LabelingAssessmentRequest):
     Returns masked diagrams with pins (①, ②, ③...) and options for students to match/label.
     """
     import random
+    limit_cnt = req.limit or 5
     try:
         conn = get_db_connection()
         with conn.cursor() as cur:
@@ -498,16 +531,16 @@ def get_labeling_assessment(req: LabelingAssessmentRequest):
                 cur.execute("""
                     SELECT id, semester, unit, chapter, lesson, description, image_filename, masked_labels_json
                     FROM diagram_metadata
-                    WHERE semester = %s AND lesson = %s AND masked_labels_json IS NOT NULL
-                    ORDER BY id LIMIT %s;
-                """, (req.semester, req.lesson, req.limit))
+                    WHERE semester = %s AND lesson = %s AND is_suitable_for_labeling = 'YES' AND masked_labels_json IS NOT NULL
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, req.lesson, limit_cnt))
             else:
                 cur.execute("""
                     SELECT id, semester, unit, chapter, lesson, description, image_filename, masked_labels_json
                     FROM diagram_metadata
-                    WHERE semester = %s AND masked_labels_json IS NOT NULL
-                    ORDER BY id LIMIT %s;
-                """, (req.semester, req.limit))
+                    WHERE semester = %s AND is_suitable_for_labeling = 'YES' AND masked_labels_json IS NOT NULL
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, limit_cnt))
             rows = cur.fetchall()
         conn.close()
     except Exception as e:

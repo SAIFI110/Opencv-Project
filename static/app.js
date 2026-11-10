@@ -68,33 +68,88 @@ function populateModalDropdown() {
   const dropdown = document.getElementById('modalLessonDropdown');
   dropdown.innerHTML = '';
 
-  if (state.assessmentType === 'diagram' || state.assessmentType === 'labeling') {
+  if (state.assessmentType === 'labeling') {
+    const totalLabel = (state.curriculum && state.curriculum.total_labeling_diagrams != null)
+      ? state.curriculum.total_labeling_diagrams
+      : 0;
     const allOpt = document.createElement('option');
     allOpt.value = 'all';
-    const totalDiag = (state.curriculum && state.curriculum.total_diagrams) ? state.curriculum.total_diagrams : 0;
+    allOpt.textContent = `All Approved Diagrams in Semester ${state.semester} (${totalLabel})`;
+    dropdown.appendChild(allOpt);
+
+    if (!state.curriculum) return;
+
+    let hasAnyLabeling = false;
+    state.curriculum.units.forEach(unit => {
+      const group = document.createElement('optgroup');
+      group.label = unit.unit_name;
+      unit.lessons.forEach(l => {
+        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        if (l.labeling_count && l.labeling_count > 0) {
+          const opt = document.createElement('option');
+          opt.value = l.lesson_name;
+          opt.textContent = `${l.lesson_name} (🏷️ ${l.labeling_count})`;
+          group.appendChild(opt);
+          hasAnyLabeling = true;
+        }
+      });
+      if (group.children.length > 0) dropdown.appendChild(group);
+    });
+
+    if (!hasAnyLabeling && totalLabel === 0) {
+      const noOpt = document.createElement('option');
+      noOpt.value = '';
+      noOpt.disabled = true;
+      noOpt.textContent = `No labeling diagrams available for Semester ${state.semester}`;
+      dropdown.appendChild(noOpt);
+    }
+  } else if (state.assessmentType === 'diagram') {
+    const totalDiag = (state.curriculum && state.curriculum.total_diagrams != null)
+      ? state.curriculum.total_diagrams
+      : 0;
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all';
     allOpt.textContent = `All Diagrams in Semester ${state.semester} (${totalDiag})`;
     dropdown.appendChild(allOpt);
-  }
 
-  if (!state.curriculum) return;
+    if (!state.curriculum) return;
 
-  state.curriculum.units.forEach(unit => {
-    const group = document.createElement('optgroup');
-    group.label = unit.unit_name;
-    unit.lessons.forEach(l => {
-      if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
-      const opt = document.createElement('option');
-      opt.value = l.lesson_name;
-      opt.textContent = l.lesson_name + (l.has_diagrams ? ` (🖼️ ${l.diagram_count})` : '');
-      group.appendChild(opt);
+    state.curriculum.units.forEach(unit => {
+      const group = document.createElement('optgroup');
+      group.label = unit.unit_name;
+      unit.lessons.forEach(l => {
+        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        if (l.has_diagrams && l.diagram_count > 0) {
+          const opt = document.createElement('option');
+          opt.value = l.lesson_name;
+          opt.textContent = `${l.lesson_name} (🖼️ ${l.diagram_count})`;
+          group.appendChild(opt);
+        }
+      });
+      if (group.children.length > 0) dropdown.appendChild(group);
     });
-    if (group.children.length > 0) dropdown.appendChild(group);
-  });
+  } else {
+    // Theory mode: list all lessons
+    if (!state.curriculum) return;
+
+    state.curriculum.units.forEach(unit => {
+      const group = document.createElement('optgroup');
+      group.label = unit.unit_name;
+      unit.lessons.forEach(l => {
+        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        const opt = document.createElement('option');
+        opt.value = l.lesson_name;
+        opt.textContent = l.lesson_name;
+        group.appendChild(opt);
+      });
+      if (group.children.length > 0) dropdown.appendChild(group);
+    });
+  }
 }
 
 // Modal controls
 function openAssessmentModal() {
-  populateModalDropdown();
+  setModalTab(state.assessmentType || 'theory');
   document.getElementById('assessmentModal').style.display = 'flex';
 }
 
@@ -109,10 +164,29 @@ function setModalTab(type) {
   const tabLab = document.getElementById('tabLabeling');
   if (tabLab) tabLab.classList.toggle('active', type === 'labeling');
 
+  const optionsRow = document.getElementById('assessmentOptionsRow');
   const typeWrapper = document.getElementById('typeSelectWrapper');
-  if (typeWrapper) {
-    typeWrapper.style.display = (type === 'theory') ? 'block' : 'none';
+  const countWrapper = document.getElementById('countSelectWrapper');
+
+  if (type === 'labeling') {
+    if (optionsRow) optionsRow.style.display = 'none';
+  } else if (type === 'diagram') {
+    if (optionsRow) {
+      optionsRow.style.display = 'grid';
+      optionsRow.style.gridTemplateColumns = '1fr';
+    }
+    if (typeWrapper) typeWrapper.style.display = 'none';
+    if (countWrapper) countWrapper.style.display = 'block';
+  } else {
+    // Theory mode
+    if (optionsRow) {
+      optionsRow.style.display = 'grid';
+      optionsRow.style.gridTemplateColumns = '1fr 1fr';
+    }
+    if (typeWrapper) typeWrapper.style.display = 'block';
+    if (countWrapper) countWrapper.style.display = 'block';
   }
+
   populateModalDropdown();
 }
 
@@ -199,7 +273,7 @@ async function confirmStartAssessment() {
           semester: state.semester,
           lesson: lesson,
           topic: targetTopic,
-          limit: 3
+          limit: 999
         })
       });
       thinkingEl.remove();
@@ -396,7 +470,7 @@ function renderLabelingWidget(data) {
 
   widget.innerHTML = `
     <div class="widget-header">
-      <span class="widget-title">🏷️ Interactive Labeling Quiz (${data.diagrams.length} Diagrams)</span>
+      <span class="widget-title">🏷️ Interactive Labeling Quiz</span>
       <span class="score-badge" id="labelingScoreTracker">Score: 0 / 0</span>
     </div>
     <div class="widget-body" id="labelingList"></div>
