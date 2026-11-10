@@ -95,7 +95,7 @@
           placeholder="Or type custom topic (e.g., جهاز الدوران, Heart)...">
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+      <div id="assessmentOptionsRow" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
         <div id="typeSelectWrapper">
           <label
             style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Question
@@ -107,7 +107,7 @@
           </select>
         </div>
 
-        <div>
+        <div id="countSelectWrapper">
           <label
             style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Questions
             Count:</label>
@@ -115,6 +115,7 @@
             <option value="3">3 Questions</option>
             <option value="5" selected>5 Questions</option>
             <option value="10">10 Questions</option>
+            <option value="999">All Available</option>
           </select>
         </div>
       </div>
@@ -125,7 +126,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=2.3"></script>
+  <script src="/static/app.js?v=2.5"></script>
 </body>
 
 </html>
