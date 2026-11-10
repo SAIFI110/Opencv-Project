@@ -538,7 +538,7 @@ body {
 
 .type-selector-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   background: var(--bg-sidebar);
   padding: 4px;

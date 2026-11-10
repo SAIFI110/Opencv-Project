@@ -12,6 +12,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCurriculum(state.semester);
+  resetChat();
 });
 
 function switchSemester(sem) {
@@ -20,13 +21,36 @@ function switchSemester(sem) {
     p.classList.toggle('active', idx + 1 === sem);
   });
   loadCurriculum(sem);
-  resetChat(); // Clear screen completely on semester switch
+  resetChat();
 }
 
 function resetChat() {
   state.chatHistory = [];
   const container = document.getElementById('messagesContainer');
-  container.innerHTML = ''; // completely blank canvas
+  if (container) container.innerHTML = '';
+}
+
+async function startDirectLabeling(lesson = 'all') {
+  appendUserMessage(`Start Interactive Labeling Quiz (Semester ${state.semester})`);
+  const thinkingEl = appendThinkingIndicator();
+  try {
+    const res = await fetch('/api/assessment/labeling', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        semester: state.semester,
+        lesson: lesson,
+        limit: 3
+      })
+    });
+    thinkingEl.remove();
+    if (!res.ok) throw new Error('Failed to load labeling quiz');
+    const data = await res.json();
+    renderLabelingWidget(data);
+  } catch (e) {
+    thinkingEl.remove();
+    appendBotMessage(`Error loading labeling quiz: ${e.message}`);
+  }
 }
 
 async function loadCurriculum(sem) {
@@ -44,10 +68,11 @@ function populateModalDropdown() {
   const dropdown = document.getElementById('modalLessonDropdown');
   dropdown.innerHTML = '';
 
-  if (state.assessmentType === 'diagram') {
+  if (state.assessmentType === 'diagram' || state.assessmentType === 'labeling') {
     const allOpt = document.createElement('option');
     allOpt.value = 'all';
-    allOpt.textContent = `All Diagrams in Semester ${state.semester} (${state.curriculum?.total_diagrams || 0})`;
+    const totalDiag = (state.curriculum && state.curriculum.total_diagrams) ? state.curriculum.total_diagrams : 0;
+    allOpt.textContent = `All Diagrams in Semester ${state.semester} (${totalDiag})`;
     dropdown.appendChild(allOpt);
   }
 
@@ -81,6 +106,9 @@ function setModalTab(type) {
   state.assessmentType = type;
   document.getElementById('tabTheory').classList.toggle('active', type === 'theory');
   document.getElementById('tabDiagram').classList.toggle('active', type === 'diagram');
+  const tabLab = document.getElementById('tabLabeling');
+  if (tabLab) tabLab.classList.toggle('active', type === 'labeling');
+
   const typeWrapper = document.getElementById('typeSelectWrapper');
   if (typeWrapper) {
     typeWrapper.style.display = (type === 'theory') ? 'block' : 'none';
@@ -121,13 +149,13 @@ async function confirmStartAssessment() {
       const res = await fetch('/api/assessment/theory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          semester: state.semester, 
-          lesson: lesson, 
+        body: JSON.stringify({
+          semester: state.semester,
+          lesson: lesson,
           topic: targetTopic,
           question_type: qType,
-          num_mcq: num_mcq, 
-          num_short: num_short 
+          num_mcq: num_mcq,
+          num_short: num_short
         })
       });
       thinkingEl.remove();
@@ -138,15 +166,15 @@ async function confirmStartAssessment() {
       thinkingEl.remove();
       appendBotMessage(`Error generating assessment: ${e.message}`);
     }
-  } else {
+  } else if (state.assessmentType === 'diagram') {
     appendUserMessage(`Show Diagram Assessment for: "${targetTopic || 'All'}"`);
     const thinkingEl = appendThinkingIndicator();
     try {
       const res = await fetch('/api/assessment/diagram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          semester: state.semester, 
+        body: JSON.stringify({
+          semester: state.semester,
           lesson: lesson,
           topic: targetTopic,
           num_questions: qCount
@@ -159,6 +187,28 @@ async function confirmStartAssessment() {
     } catch (e) {
       thinkingEl.remove();
       appendBotMessage(`Error loading diagrams: ${e.message}`);
+    }
+  } else if (state.assessmentType === 'labeling') {
+    appendUserMessage(`Start Interactive Labeling Quiz for: "${targetTopic || 'All'}"`);
+    const thinkingEl = appendThinkingIndicator();
+    try {
+      const res = await fetch('/api/assessment/labeling', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          semester: state.semester,
+          lesson: lesson,
+          topic: targetTopic,
+          limit: 3
+        })
+      });
+      thinkingEl.remove();
+      if (!res.ok) throw new Error('Failed to load labeling quiz');
+      const data = await res.json();
+      renderLabelingWidget(data);
+    } catch (e) {
+      thinkingEl.remove();
+      appendBotMessage(`Error loading labeling quiz: ${e.message}`);
     }
   }
 }
@@ -335,6 +385,123 @@ function renderDiagramWidget(data) {
   scrollToBottom();
 }
 
+// Render Interactive Labeling Assessment
+function renderLabelingWidget(data) {
+  const container = document.getElementById('messagesContainer');
+  const row = document.createElement('div');
+  row.className = 'message-row bot';
+
+  const widget = document.createElement('div');
+  widget.className = 'assessment-widget';
+
+  widget.innerHTML = `
+    <div class="widget-header">
+      <span class="widget-title">🏷️ Interactive Labeling Quiz (${data.diagrams.length} Diagrams)</span>
+      <span class="score-badge" id="labelingScoreTracker">Score: 0 / 0</span>
+    </div>
+    <div class="widget-body" id="labelingList"></div>
+  `;
+
+  const target = widget.querySelector('#labelingList');
+
+  data.diagrams.forEach((d, idx) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'diagram-inline-view';
+    cardEl.style.marginBottom = '24px';
+    cardEl.style.padding = '16px';
+    cardEl.style.background = 'var(--bg-card, #ffffff)';
+    cardEl.style.borderRadius = '12px';
+    cardEl.style.border = '1px solid var(--border-light, #e2e8f0)';
+
+    let pinsHtml = '';
+    const pinKeys = Object.keys(d.masked_labels).sort((a, b) => parseInt(a) - parseInt(b));
+
+    pinKeys.forEach(pinNum => {
+      let optHtml = `<option value="">-- Choose label for Pin ${pinNum} --</option>`;
+      d.options.forEach(opt => {
+        optHtml += `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`;
+      });
+
+      pinsHtml += `
+        <div class="labeling-pin-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #0f172a; color: #fff; font-weight: 700; font-size: 0.95rem;">${pinNum}</span>
+          <select class="select-clean labeling-select" data-pin="${pinNum}" data-correct="${escapeHtml(d.masked_labels[pinNum])}" style="flex: 1; padding: 8px 12px; border-radius: 8px;">
+            ${optHtml}
+          </select>
+          <span class="pin-feedback" style="font-weight: 600; min-width: 24px;"></span>
+        </div>
+      `;
+    });
+
+    cardEl.innerHTML = `
+      <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">
+        #${idx + 1} — ${escapeHtml(d.lesson)}
+      </div>
+      <div style="text-align: center; margin-bottom: 16px;">
+        <img class="diagram-inline-img" src="${d.image_url}" alt="Labeling Diagram" style="max-height: 420px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${d.image_url}', '_blank')">
+      </div>
+      <div style="background: var(--bg-subtle, #f8fafc); padding: 14px; border-radius: 8px; margin-bottom: 12px;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
+          Identify the parts indicated by pins (حدد الأجزاء المشار إليها بالأرقام):
+        </div>
+        ${pinsHtml}
+      </div>
+      <button class="btn-check-labeling" style="padding: 8px 18px; border-radius: 6px; background: #2563eb; color: #fff; border: none; font-weight: 600; cursor: pointer;">
+        Check Answers (تحقق من الإجابات)
+      </button>
+      <div class="labeling-result-msg" style="margin-top: 10px; font-size: 0.9rem; font-weight: 600; display: none;"></div>
+    `;
+
+    const btnCheck = cardEl.querySelector('.btn-check-labeling');
+    btnCheck.onclick = () => {
+      const selects = cardEl.querySelectorAll('.labeling-select');
+      let cardCorrect = 0;
+      let cardTotal = selects.length;
+
+      selects.forEach(sel => {
+        const chosen = sel.value.trim();
+        const correct = sel.getAttribute('data-correct').trim();
+        const fb = sel.nextElementSibling;
+        sel.disabled = true;
+
+        if (chosen === correct) {
+          cardCorrect++;
+          sel.style.borderColor = '#16a34a';
+          sel.style.background = '#f0fdf4';
+          fb.innerHTML = '<span style="color: #16a34a;">✓</span>';
+        } else {
+          sel.style.borderColor = '#dc2626';
+          sel.style.background = '#fef2f2';
+          fb.innerHTML = `<span style="color: #dc2626;">✗</span> <small style="color: #16a34a; font-weight: 600; margin-left: 6px;">(${correct})</small>`;
+        }
+      });
+
+      state.score.correct += cardCorrect;
+      state.score.total += cardTotal;
+
+      const tracker = document.getElementById('labelingScoreTracker');
+      if (tracker) tracker.textContent = `Score: ${state.score.correct} / ${state.score.total}`;
+
+      const resMsg = cardEl.querySelector('.labeling-result-msg');
+      resMsg.style.display = 'block';
+      if (cardCorrect === cardTotal) {
+        resMsg.innerHTML = `<span style="color: #16a34a;">🎉 Perfect! All ${cardTotal} labels identified correctly! (إجابة نموذجية كاملة)</span>`;
+      } else {
+        resMsg.innerHTML = `<span style="color: #d97706;">Score for this diagram: ${cardCorrect}/${cardTotal} correct. Review the corrections above!</span>`;
+      }
+      btnCheck.disabled = true;
+      btnCheck.style.opacity = '0.6';
+    };
+
+    target.appendChild(cardEl);
+  });
+
+  row.innerHTML = `<div class="message-avatar">✦</div>`;
+  row.appendChild(widget);
+  container.appendChild(row);
+  scrollToBottom();
+}
+
 // Chat Handlers
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
@@ -351,8 +518,8 @@ async function sendChatMessage() {
   if (mcqMatch) {
     const count = parseInt(mcqMatch[1], 10);
     let topic = text.replace(mcqMatch[0], '')
-                    .replace(/create|generate|give me|bna do|bna ke do|chahiye|from|on|me se|in/gi, '')
-                    .trim();
+      .replace(/create|generate|give me|bna do|bna ke do|chahiye|from|on|me se|in/gi, '')
+      .trim();
     if (!topic) topic = "General Science";
 
     const thinkingEl = appendThinkingIndicator();
@@ -377,6 +544,12 @@ async function sendChatMessage() {
       thinkingEl.remove();
       // Fallback to conversational tutor if needed
     }
+  }
+
+  if (lower.includes('labeling') || lower.includes('interactive labeling') || lower.includes('label')) {
+    setModalTab('labeling');
+    openAssessmentModal();
+    return;
   }
 
   if (lower.includes('create an assessment') || lower === 'assessment' || lower === 'quiz' || lower === 'اختبار') {
@@ -413,6 +586,9 @@ async function sendChatMessage() {
 
 function handleQuickChip(text) {
   if (text.toLowerCase().includes('create an assessment')) {
+    openAssessmentModal();
+  } else if (text.toLowerCase().includes('labeling')) {
+    setModalTab('labeling');
     openAssessmentModal();
   } else if (text.toLowerCase().includes('diagram')) {
     setModalTab('diagram');

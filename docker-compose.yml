@@ -1,19 +1,38 @@
 services:
-  # 1. Relational Database: MySQL 8.0
+  # 1. FastAPI Web Application & Chatbot
+  app:
+    build: .
+    container_name: fastapi-app
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=mysql
+      - QDRANT_HOST=qdrant
+    volumes:
+      - .:/app
+    command: uvicorn chatbot_backend:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - mysql
+      - qdrant
+
+  # 2. Relational Database: MySQL 8.0
   mysql:
     image: mysql:8.0
     container_name: science_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: grade8_science
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-grade8_science}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
-  # 2. Vector Database: Qdrant
+  # 3. Vector Database: Qdrant
   qdrant:
     image: qdrant/qdrant:latest
     container_name: science_qdrant
