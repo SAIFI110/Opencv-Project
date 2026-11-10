@@ -11,9 +11,7 @@ Production-ready FastAPI backend providing:
 
 import os
 import re
-import csv
 import json
-import hashlib
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
@@ -31,6 +29,13 @@ from db import get_db_connection
 load_dotenv()
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+# Qdrant & Server Configuration loaded dynamically from .env
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", "6333"))
+QDRANT_COLLECTION = os.environ.get("QDRANT_COLLECTION", "grade8_science_chunks")
+SERVER_HOST = os.environ.get("SERVER_HOST", "127.0.0.1")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", "8000"))
 
 app = FastAPI(
     title="Grade 8 Science AI Tutor & Assessment Platform",
@@ -60,6 +65,11 @@ for sem in [1, 2, 3]:
     diag_dir = BASE_DIR / f"output_diagrams_sem{sem}"
     if diag_dir.exists():
         app.mount(f"/output_diagrams_sem{sem}", StaticFiles(directory=str(diag_dir)), name=f"output_diagrams_sem{sem}")
+    
+    label_dir = BASE_DIR / f"labeling_sem{sem}"
+    if not label_dir.exists():
+        label_dir.mkdir(exist_ok=True)
+    app.mount(f"/labeling_sem{sem}", StaticFiles(directory=str(label_dir)), name=f"labeling_sem{sem}")
 
 # ==============================================================================
 # CURRICULUM REGISTRIES (TABLE OF CONTENTS - GRADE 8 SCIENCE)
@@ -129,9 +139,9 @@ TOC_REGISTRIES = {
 }
 
 PDF_FILENAMES = {
-    1: "grade_8_semester_1_2362c878-605f-4ccc-8512-0fda4ee9447d_1-145 (1).pdf",
-    2: "grade_8_semester_2_science (1).pdf",
-    3: "grade_8_semester_3_science (1).pdf",
+    1: "grade_8_semester_1.pdf",
+    2: "grade_8_semester_2.pdf",
+    3: "grade_8_semester_3.pdf",
 }
 
 # ==============================================================================
@@ -213,10 +223,10 @@ def retrieve_chunks_from_qdrant(query: str, semester: int, limit: int = 5) -> st
     try:
         from qdrant_client import QdrantClient
         from qdrant_client.models import Filter, FieldCondition, MatchValue
-        qc = QdrantClient(host="localhost", port=6333)
+        qc = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         emb = client.embeddings.create(input=query, model="text-embedding-3-small").data[0].embedding
         hits = qc.query_points(
-            collection_name="grade8_science_chunks",
+            collection_name=QDRANT_COLLECTION,
             query=emb,
             query_filter=Filter(
                 must=[FieldCondition(key="semester", match=MatchValue(value=semester))]
@@ -256,6 +266,12 @@ class DiagramAssessmentRequest(BaseModel):
     lesson: Optional[str] = "all"
     topic: Optional[str] = None
     num_questions: Optional[int] = 3
+
+class LabelingAssessmentRequest(BaseModel):
+    semester: int
+    lesson: Optional[str] = "all"
+    topic: Optional[str] = None
+    limit: Optional[int] = 3
 
 # ==============================================================================
 # API ENDPOINTS
@@ -468,6 +484,86 @@ OUTPUT FORMAT: Return ONLY valid JSON:
     }
 
 
+@app.post("/api/assessment/labeling")
+def get_labeling_assessment(req: LabelingAssessmentRequest):
+    """
+    Interactive Labeling Quiz Endpoint.
+    Returns masked diagrams with pins (①, ②, ③...) and options for students to match/label.
+    """
+    import random
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            if req.lesson and req.lesson != "all":
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, masked_labels_json
+                    FROM diagram_metadata
+                    WHERE semester = %s AND lesson = %s AND masked_labels_json IS NOT NULL
+                    ORDER BY id LIMIT %s;
+                """, (req.semester, req.lesson, req.limit))
+            else:
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, masked_labels_json
+                    FROM diagram_metadata
+                    WHERE semester = %s AND masked_labels_json IS NOT NULL
+                    ORDER BY id LIMIT %s;
+                """, (req.semester, req.limit))
+            rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"[MySQL Labeling Fetch Warning] {e}")
+        rows = []
+
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"No interactive labeling diagrams found for semester {req.semester}")
+
+    results = []
+    distractor_bank = [
+        "المعدة", "الكبد", "الرئة", "القلب", "الشريان الأبهر", "خلية دم حمراء",
+        "غشاء بلازمي", "النواة", "الميتوكندريا", "البنكرياس", "الأمعاء الدقيقة", "الشريان الرئوي"
+    ]
+
+    for r in rows:
+        mapping = r.get("masked_labels_json")
+        if isinstance(mapping, str):
+            try:
+                mapping = json.loads(mapping)
+            except Exception:
+                mapping = {}
+        if not mapping or not isinstance(mapping, dict):
+            continue
+
+        filename = r["image_filename"]
+        sem = r["semester"]
+        image_url = f"/labeling_sem{sem}/{filename}"
+
+        # Collect Arabic labels + distractors
+        correct_labels = list(mapping.values())
+        pool = list(set(correct_labels))
+        for d in distractor_bank:
+            if d not in pool and len(pool) < len(correct_labels) + 3:
+                pool.append(d)
+        random.shuffle(pool)
+
+        results.append({
+            "id": r["id"],
+            "semester": sem,
+            "lesson": r.get("lesson", ""),
+            "description": r.get("description", ""),
+            "image_url": image_url,
+            "masked_labels": mapping,
+            "options": pool,
+            "total_pins": len(mapping)
+        })
+
+    return {
+        "assessment_type": "labeling",
+        "semester": req.semester,
+        "count": len(results),
+        "diagrams": results
+    }
+
+
 @app.post("/api/assessment/theory")
 def generate_theory_assessment(req: TheoryAssessmentRequest):
     """
@@ -584,10 +680,10 @@ def conversational_tutor_chat(req: ChatRequest):
     try:
         from qdrant_client import QdrantClient
         from qdrant_client.models import Filter, FieldCondition, MatchValue
-        qc = QdrantClient(host="localhost", port=6333)
+        qc = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         emb = client.embeddings.create(input=req.message, model="text-embedding-3-small").data[0].embedding
         res = qc.query_points(
-            collection_name="grade8_science_chunks",
+            collection_name=QDRANT_COLLECTION,
             query=emb,
             limit=3,
             query_filter=Filter(
@@ -602,34 +698,38 @@ def conversational_tutor_chat(req: ChatRequest):
 
     context_prompt = f"\n\nOFFICIAL TEXTBOOK PASSAGES (FROM QDRANT VECTOR DB):\n\"\"\"{retrieved_context}\"\"\"\n" if retrieved_context else ""
 
-    system_prompt = f"""You are a Grade 8 Science tutor. Your ONLY knowledge domain is the Saudi Grade 8 Science textbook (علوم الصف الثاني المتوسط).
+    system_prompt = f"""You are an encouraging, expert Grade 8 Science tutor for Saudi Middle School students (علوم الصف الثاني المتوسط).
+Your knowledge domain is strictly focused on the Saudi Grade 8 Science textbook.
 
 CURRENT SEMESTER: {req.semester}
 TEXTBOOK CHAPTERS THIS SEMESTER: {topic_summary}
 {context_prompt}
-ABSOLUTE RULES — YOU MUST FOLLOW EVERY SINGLE ONE:
-1. Ground your answers directly in the textbook passages provided above.
-2. You ONLY answer questions directly related to Grade 8 Science curriculum topics listed above.
-2. If the student asks about ANYTHING outside Grade 8 Science — sports, politics, wars, celebrities, movies, games, personal advice, math, history, geography, other school subjects, or ANY topic not covered in the Grade 8 Science textbook — you MUST refuse with EXACTLY this response:
-   "This question is outside the Grade 8 Science curriculum. I can only help with science topics from your textbook. Try asking about [suggest a relevant science topic from the chapters above]."
-3. Do NOT answer general knowledge questions, trivia, or opinions even if they seem harmless.
-4. Do NOT say "I'm not sure" and then answer anyway. If it's off-topic, REFUSE completely.
-5. Keep answers concise and focused. Use English with Arabic scientific terms in brackets where relevant.
-6. If the student asks for a quiz or test, tell them to use the "Create Assessment" button.
+RULES YOU MUST FOLLOW:
+1. GREETINGS & POLITE CHIT-CHAT (ALWAYS WELCOME & POLITE):
+   - When a student says "Hello", "Hi", "Salam / Assalam-o-Alaikum", "How are you?", "Who are you?", or expresses gratitude ("Thank you", "Thanks"), respond warmly, politely, and enthusiastically as their friendly Science Tutor!
+   - Invite them to explore or ask about any chapter or concept from their textbook.
+   - NEVER refuse basic greetings or polite social pleasantries!
 
-EXAMPLES OF QUESTIONS YOU MUST REFUSE:
-- "Who is better, Messi or Ronaldo?" → REFUSE
-- "Tell me about the Iran war" → REFUSE  
-- "What is the capital of France?" → REFUSE
-- "Help me with math homework" → REFUSE
-- "Write me a poem" → REFUSE
-- "What is ChatGPT?" → REFUSE
+2. CONVERSATIONAL CONTINUITY & FOLLOW-UPS:
+   - Follow the conversation history naturally. If the student asks to clarify a previous topic (e.g., "Can you explain that more simply?", "Give me another example", "What does that term mean?"), maintain context and provide a clear, accessible explanation.
 
-EXAMPLES OF QUESTIONS YOU MUST ANSWER:
-- "What is a solution?" → ANSWER (Chapter 2: Solutions & Solubility)
-- "Explain the digestive system" → ANSWER (Chapter 6: Digestion)
-- "What is pH?" → ANSWER (Chapter 2: Acids & Bases)
-- "How does heat transfer work?" → ANSWER (Chapter 11: Thermal Energy)"""
+3. STRICT GROUNDING IN SCIENCE TEXTBOOK:
+   - For all scientific questions, ground your explanations directly in the official Grade 8 Science textbook passages provided above.
+   - Use accessible English with official Arabic scientific terms in brackets where relevant (e.g., "Circulatory System (جهاز الدوران)").
+
+4. OFF-TOPIC ACADEMIC/ENTERTAINMENT REFUSAL:
+   - If the student asks about external domains unrelated to science — such as sports, football (Messi/Ronaldo), celebrities, movies, video games, politics, wars, personal advice, or other school subjects (history, geography, literature) — politely refuse with:
+     "This question is outside the Grade 8 Science curriculum. I can only help with science topics from your textbook. Try asking about [suggest a relevant science topic from the chapters above]."
+
+5. ASSESSMENTS:
+   - If the student explicitly asks for a full quiz or interactive test, remind them they can click the "Create Assessment" button or specify how many questions they want.
+
+EXAMPLES OF INTERACTIONS:
+- "How are you?" → "I'm doing great, thank you! Ready to help you learn Grade 8 Science. Which topic or chapter would you like to explore today?"
+- "Hello / Salam" → "Hello and welcome! I am your Grade 8 Science tutor. What science concept can I help you with today?"
+- "Thank you" → "You're very welcome! Best of luck with your studies. Feel free to ask whenever you need help."
+- "What is a solution?" → Explain solutions using Chapter 2 concepts.
+- "Who won the World Cup?" → Politely refuse as it is outside Grade 8 science."""
 
     messages = [{"role": "system", "content": system_prompt}]
     for msg in req.history[-6:]:
@@ -664,13 +764,14 @@ EXAMPLES OF QUESTIONS YOU MUST ANSWER:
             "suggestions": suggestions
         }
     except Exception as e:
+        print(f"[Chatbot Endpoint Error] {e}")
         return {
-            "reply": f"Temporary error: {str(e)}",
+            "reply": "I encountered a temporary connection issue. Please try asking your question again in a moment.",
             "suggestions": ["Create an Assessment"]
         }
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("chatbot_backend:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("chatbot_backend:app", host=SERVER_HOST, port=SERVER_PORT, reload=True)
 

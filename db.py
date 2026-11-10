@@ -5,7 +5,6 @@ Connects to Docker MySQL (localhost:3306)
 
 import os
 import sys
-import json
 import pymysql
 from pymysql.cursors import DictCursor
 from dotenv import load_dotenv
@@ -16,28 +15,52 @@ if sys.platform == "win32":
 
 load_dotenv()
 
-DB_HOST = os.environ.get("DB_HOST", "localhost")
-DB_PORT = int(os.environ.get("DB_PORT", 3306))
-DB_USER = os.environ.get("DB_USER", "root")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "rootpassword")
-DB_NAME = os.environ.get("DB_NAME", "grade8_science")
+DB_HOST = os.environ.get("DB_HOST")
+DB_PORT = int(os.environ.get("DB_PORT", "3306"))
+DB_USER = os.environ.get("DB_USER")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_NAME = os.environ.get("DB_NAME")
 
 
 def get_db_connection():
     """
-    Returns a live connection to the Docker MySQL database.
+    Returns a live connection to the MySQL database configured via environment variables.
     Uses DictCursor so results are automatically formatted as Python dictionaries.
     """
-    return pymysql.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        cursorclass=DictCursor,
-        autocommit=True
-    )
+    if not DB_HOST or not DB_USER or not DB_PASSWORD or not DB_NAME:
+        raise ValueError(
+            "Database configuration missing in .env file. "
+            "Please ensure DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME are set."
+        )
+
+    try:
+        return pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            charset="utf8mb4",
+            cursorclass=DictCursor,
+            autocommit=True
+        )
+    except Exception as primary_err:
+        # Fallback for Windows host if DB_HOST is set to host.docker.internal or a container name
+        if DB_HOST not in ("127.0.0.1", "localhost"):
+            try:
+                return pymysql.connect(
+                    host="127.0.0.1",
+                    port=DB_PORT,
+                    user=DB_USER,
+                    password=DB_PASSWORD,
+                    database=DB_NAME,
+                    charset="utf8mb4",
+                    cursorclass=DictCursor,
+                    autocommit=True
+                )
+            except Exception:
+                raise primary_err
+        raise primary_err
 
 
 def init_database_tables():

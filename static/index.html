@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Grade 8 Science</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
+
 <body>
 
   <!-- Minimal Sidebar (ChatGPT style) -->
@@ -52,16 +56,11 @@
     <!-- Floating Clean Input Bar -->
     <div class="input-dock">
       <div class="input-box-wrapper">
-        <input 
-          type="text" 
-          id="chatInput" 
-          class="chat-input" 
-          placeholder="Ask anything about your science textbook..." 
-          autocomplete="off"
-          onkeydown="if(event.key === 'Enter') sendChatMessage()"
-        >
+        <input type="text" id="chatInput" class="chat-input" placeholder="Ask anything about your science textbook..."
+          autocomplete="off" onkeydown="if(event.key === 'Enter') sendChatMessage()">
         <button id="btnSend" class="btn-send" onclick="sendChatMessage()" title="Send">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="19" x2="12" y2="5"></line>
             <polyline points="5 12 12 5 19 12"></polyline>
           </svg>
@@ -81,25 +80,26 @@
       <div class="type-selector-tabs">
         <button id="tabTheory" class="type-tab active" onclick="setModalTab('theory')">Theory Quiz</button>
         <button id="tabDiagram" class="type-tab" onclick="setModalTab('diagram')">Diagram Quiz</button>
+        <button id="tabLabeling" class="type-tab" onclick="setModalTab('labeling')">Interactive Labeling</button>
       </div>
 
       <div>
-        <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Select Lesson / Topic:</label>
+        <label
+          style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Select
+          Lesson / Topic:</label>
         <select id="modalLessonDropdown" class="select-clean" style="margin-bottom: 10px;">
           <option value="">Loading lessons...</option>
         </select>
-        <input 
-          type="text" 
-          id="modalCustomTopic" 
-          class="chat-input" 
-          style="padding: 10px; font-size: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); width: 100%; margin-bottom: 12px;" 
-          placeholder="Or type custom topic (e.g., جهاز الدوران, Heart)..."
-        >
+        <input type="text" id="modalCustomTopic" class="chat-input"
+          style="padding: 10px; font-size: 0.85rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); width: 100%; margin-bottom: 12px;"
+          placeholder="Or type custom topic (e.g., جهاز الدوران, Heart)...">
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
         <div id="typeSelectWrapper">
-          <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Question Type:</label>
+          <label
+            style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Question
+            Type:</label>
           <select id="modalQuestionType" class="select-clean">
             <option value="mcq">MCQs Only</option>
             <option value="short">Short Questions</option>
@@ -108,7 +108,9 @@
         </div>
 
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Questions Count:</label>
+          <label
+            style="display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 6px;">Questions
+            Count:</label>
           <select id="modalQuestionCount" class="select-clean">
             <option value="3">3 Questions</option>
             <option value="5" selected>5 Questions</option>
@@ -123,6 +125,7 @@
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2.3"></script>
 </body>
+
 </html>

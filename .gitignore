@@ -2,6 +2,8 @@
 .venv/
 env/
 __pycache__/
+.ruff_cache/
+.pytest_cache/
 cached_theory_questions/
 *.json
 !manifest.json

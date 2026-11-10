@@ -16,23 +16,25 @@ if sys.platform == "win32":
 load_dotenv()
 client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# 1. Connect to Qdrant running in Docker
-qdrant = QdrantClient(host="localhost", port=6333)
-
-COLLECTION_NAME = "grade8_science_chunks"
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", "6333"))
+COLLECTION_NAME = os.environ.get("QDRANT_COLLECTION", "grade8_science_chunks")
 VECTOR_SIZE = 1536  # OpenAI text-embedding-3-small dimension
 
+# 1. Connect to Qdrant running in Docker
+qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+
 # 2. Re-create collection
-print(f"Initializing collection '{COLLECTION_NAME}' in Qdrant Docker (localhost:6333)...")
+print(f"Initializing collection '{COLLECTION_NAME}' in Qdrant Docker ({QDRANT_HOST}:{QDRANT_PORT})...")
 qdrant.recreate_collection(
     collection_name=COLLECTION_NAME,
     vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
 )
 
 PDF_FILES = {
-    1: "grade_8_semester_1_2362c878-605f-4ccc-8512-0fda4ee9447d_1-145 (1).pdf",
-    2: "grade_8_semester_2_science (1).pdf",
-    3: "grade_8_semester_3_science (1).pdf",
+    1: "grade_8_semester_1.pdf",
+    2: "grade_8_semester_2.pdf",
+    3: "grade_8_semester_3.pdf",
 }
 
 def chunk_text(text: str, chunk_size: int = 300, overlap: int = 50):
