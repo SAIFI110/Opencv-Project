@@ -261,12 +261,6 @@ class TheoryAssessmentRequest(BaseModel):
     num_mcq: Optional[int] = 5
     num_short: Optional[int] = 3
 
-class DiagramAssessmentRequest(BaseModel):
-    semester: int
-    lesson: Optional[str] = "all"
-    topic: Optional[str] = None
-    num_questions: Optional[int] = 3
-
 class SingleDiagramQuestionRequest(BaseModel):
     diagram_id: int
     num_questions: Optional[int] = 3
@@ -600,115 +594,6 @@ Ensure the "questions" array contains EXACTLY {num_q} items."""
     }
 
 
-@app.post("/api/assessment/diagram")
-def get_diagram_assessment(req: DiagramAssessmentRequest):
-    """
-    Option 2: Diagram-Based Assessment.
-    Retrieves approved, high-resolution scientific diagrams with interactive question cards
-    generated dynamically based on visual elements and authentic Document AI descriptions.
-    """
-    num_q = req.num_questions or 3
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            if req.lesson and req.lesson != "all":
-                cur.execute("""
-                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path, resolution,
-                           is_suitable_for_labeling, is_useful_for_questions
-                    FROM diagram_metadata
-                    WHERE semester = %s AND lesson = %s AND is_useful_for_questions = 'YES'
-                    ORDER BY RAND() LIMIT %s;
-                """, (req.semester, req.lesson, num_q))
-            else:
-                cur.execute("""
-                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path, resolution,
-                           is_suitable_for_labeling, is_useful_for_questions
-                    FROM diagram_metadata
-                    WHERE semester = %s AND is_useful_for_questions = 'YES'
-                    ORDER BY RAND() LIMIT %s;
-                """, (req.semester, num_q))
-            rows = cur.fetchall()
-        conn.close()
-    except Exception as e:
-        print(f"[MySQL Diagram Fetch Warning] {e}")
-        rows = []
-
-    if not rows:
-        rows = load_diagrams_bank(req.semester)[:num_q]
-
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"No approved diagrams found for semester {req.semester}")
-
-    cards = []
-    for r in rows:
-        img_rel = r.get("image_path", "").replace("\\", "/")
-        if not img_rel.startswith("/"):
-            img_rel = "/" + img_rel
-
-        desc = r.get("description", "Scientific textbook diagram")
-        lesson_name = r.get("lesson", "Science Lesson")
-
-        prompt = f"""You are an educational assessment author inspecting this Saudi Grade 8 Science diagram.
-DIAGRAM CONTEXT:
-- Lesson: {lesson_name}
-- Detailed Description: {desc}
-
-INSTRUCTIONS:
-Generate 3 distinct visual-based questions that test student comprehension of this specific illustration:
-1. Short Question: Direct question asking about a key component or process visible in the diagram.
-2. MCQ: 4 choices (A, B, C, D), correct option, and concise explanation.
-3. Scientific Reasoning Question: A 'Why' or 'How' question based on the mechanism shown in the diagram, with detailed answer.
-
-OUTPUT FORMAT: Return ONLY valid JSON:
-{{
-  "short_question": {{"question": "...", "answer": "..."}},
-  "mcq": {{
-    "question": "...",
-    "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
-    "correct": "A",
-    "explanation": "..."
-  }},
-  "reasoning_question": {{"question": "...", "answer": "..."}}
-}}"""
-
-        try:
-            res = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                temperature=0.2
-            )
-            q_data = json.loads(res.choices[0].message.content)
-        except Exception:
-            q_data = {
-                "short_question": {"question": f"What key component or process is depicted in this {lesson_name} diagram?", "answer": desc[:200]},
-                "mcq": {
-                    "question": f"Based on this diagram of {lesson_name}, which component is primarily highlighted?",
-                    "options": {"A": "Core active organ/component", "B": "Inactive membrane", "C": "External artifact", "D": "Support boundary"},
-                    "correct": "A",
-                    "explanation": "Derived directly from the diagram structure."
-                },
-                "reasoning_question": {"question": f"Why is this mechanism critical in {lesson_name}?", "answer": "It facilitates the fundamental physiological/physical transport or reaction."}
-            }
-
-        cards.append({
-            "id": f"diag_{r.get('id', 1)}",
-            "lesson": lesson_name,
-            "description": desc,
-            "image_url": img_rel,
-            "short_question": q_data.get("short_question", {}),
-            "mcq": q_data.get("mcq", {}),
-            "reasoning_question": q_data.get("reasoning_question", {})
-        })
-
-    return {
-        "assessment_type": "diagram",
-        "semester": req.semester,
-        "lesson": req.lesson,
-        "total_cards": len(cards),
-        "cards": cards
-    }
-
 
 @app.post("/api/assessment/labeling")
 def get_labeling_assessment(req: LabelingAssessmentRequest):
@@ -880,7 +765,7 @@ OUTPUT FORMAT: Return ONLY valid JSON with this exact schema:
         data["assessment_type"] = "theory"
         data["semester"] = req.semester
 
-        # Guarantee exact question counts requested by teacher/student
+        # Guarantee exact question counts requested by teacher
         if num_mcqs > 0:
             data["mcqs"] = data.get("mcqs", [])[:num_mcqs]
         else:

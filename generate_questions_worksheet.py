@@ -2,8 +2,7 @@
 """
 Educational Diagram Evaluator & Per-Lesson Worksheet Generator
 ==============================================================
-1. Agent 1 (Call #1): Gatekeeper Agent (Temp 0.0) approves/rejects diagrams.
-2. Agent 2 (Call #2): Diagram-Specific Question Author with MULTIMODAL BASE64 VISION:
+2. Agent  (Call): Diagram-Specific Question Author with MULTIMODAL BASE64 VISION:
      - Passes BOTH the Base64-encoded image AND Document AI description to gpt-4o-mini!
      - Generates 3 questions FOR EACH DIAGRAM:
          - Question 1: Short Question (سؤال قصير) + Model Answer
@@ -39,19 +38,16 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 SEMESTER_CONFIGS = {
     "1": {
         "title": "Grade 8 - Semester 1 Science",
-        "csv_path": "diagrams_metadata_sem1.csv",
         "output_csv": "diagrams_with_questions_sem1.csv",
         "worksheets_dir": "worksheets_sem1",
     },
     "2": {
         "title": "Grade 8 - Semester 2 Science",
-        "csv_path": "diagrams_metadata_sem2.csv",
         "output_csv": "diagrams_with_questions_sem2.csv",
         "worksheets_dir": "worksheets_sem2",
     },
     "3": {
         "title": "Grade 8 - Semester 3 Science",
-        "csv_path": "diagrams_metadata_sem3.csv",
         "output_csv": "diagrams_with_questions_sem3.csv",
         "worksheets_dir": "worksheets_sem3",
     },
@@ -102,7 +98,7 @@ def resolve_image_path(image_path: str, filename: str, output_dir: str = "output
 # AGENT 1: STRICT EDUCATIONAL GATEKEEPER (Call #1, Temperature 0.0)
 # ==============================================================================
 
-# (gatekeeper_agent removed: extract_diagrams.py already handles vision gatekeeping)
+
 
 def diagram_question_author_agent(lesson: str, description: str, filename: str, image_path: str = None) -> dict:
     """
@@ -208,15 +204,10 @@ def process_semester(sem_key: str):
         print(f"Error: Invalid semester '{sem_key}'")
         return
 
-    csv_in = config["csv_path"]
     csv_out = config["output_csv"]
     worksheets_dir = config["worksheets_dir"]
     title = config["title"]
     output_img_dir = f"output_diagrams_sem{sem_key}"
-
-    if not os.path.exists(csv_in):
-        print(f"[Error] File not found: {csv_in}")
-        return
 
     os.makedirs(worksheets_dir, exist_ok=True)
 
@@ -231,8 +222,16 @@ def process_semester(sem_key: str):
         rows = cur.fetchall()
     conn.close()
 
-    approved_diagrams = [r for r in rows if r.get('is_useful_for_questions', 'YES') != 'NO']
+    approved_diagrams = [
+        r for r in rows 
+        if r.get('is_useful_for_questions', 'YES') != 'NO'
+        and (r.get('lesson') or '').startswith('الدرس')
+    ]
     print(f"\n>>> Loaded {len(approved_diagrams)} approved science diagrams from Docker MySQL (diagram_metadata).\n")
+
+    if not approved_diagrams:
+        print(f"[Warning] No approved diagrams found for Semester {sem_key}")
+        return
 
     # -------------------------------------------------------------------------
     # STEP 2: Generate 3 Questions FOR EACH APPROVED DIAGRAM (Call #2 - Multimodal)
@@ -301,6 +300,7 @@ def process_semester(sem_key: str):
     try:
         conn = get_db()
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM diagram_questions WHERE semester = %s;", (int(sem_key),))
             for rec in enriched_diagrams:
                 cur.execute("""
                 INSERT INTO diagram_questions (
@@ -371,14 +371,34 @@ def process_semester(sem_key: str):
     print(f"Total unique lessons to build worksheets for: {len(lesson_groups)}\n")
 
     generated_worksheets = []
-    for l_idx, (lesson_name, items) in enumerate(lesson_groups.items(), 1):
-        safe_name = sanitize_filename(lesson_name)
-        out_filename = f"worksheet_lesson_{l_idx:02d}_{safe_name}.html"
-        out_filepath = os.path.join(worksheets_dir, out_filename)
+    try:
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM lesson_worksheets WHERE semester = %s;", (int(sem_key),))
+            for l_idx, (lesson_name, items) in enumerate(lesson_groups.items(), 1):
+                safe_name = sanitize_filename(lesson_name)
+                out_filename = f"worksheet_lesson_{l_idx:02d}_{safe_name}.html"
+                out_filepath = os.path.join(worksheets_dir, out_filename)
 
-        build_single_lesson_worksheet(title, lesson_name, items, out_filepath)
-        generated_worksheets.append((lesson_name, out_filename, len(items)))
-        print(f"  [{l_idx:02d}/{len(lesson_groups):02d}] Created: {out_filename} ({len(items)} diagram(s))")
+                ws_html = build_single_lesson_worksheet(title, lesson_name, items, out_filepath)
+                generated_worksheets.append((lesson_name, out_filename, len(items)))
+                print(f"  [{l_idx:02d}/{len(lesson_groups):02d}] Created: {out_filename} ({len(items)} diagram(s))")
+
+                first_item = items[0] if items else {}
+                cur.execute("""
+                    INSERT INTO lesson_worksheets (semester, unit, chapter, lesson, diagram_count, worksheet_html)
+                    VALUES (%s, %s, %s, %s, %s, %s);
+                """, (
+                    int(sem_key),
+                    first_item.get("unit", ""),
+                    first_item.get("chapter", ""),
+                    lesson_name,
+                    len(items),
+                    ws_html
+                ))
+        conn.close()
+    except Exception as e:
+        print(f"  [MySQL Worksheet Save Warning] {e}")
 
     # Also build a clean Index page for navigation
     build_worksheets_index(title, generated_worksheets, os.path.join(worksheets_dir, "index.html"))
@@ -806,6 +826,7 @@ def build_single_lesson_worksheet(semester_title: str, lesson_name: str, diagram
 
     with open(output_file, "w", encoding="utf-8") as f_out:
         f_out.write(html_code)
+    return html_code
 
 
 # ==============================================================================
@@ -936,6 +957,7 @@ def build_worksheets_index(semester_title: str, worksheets_list: list, output_fi
 """
     with open(output_file, "w", encoding="utf-8") as f_out:
         f_out.write(html_code)
+    return html_code
 
 
 # ==============================================================================

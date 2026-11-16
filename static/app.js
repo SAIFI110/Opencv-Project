@@ -85,20 +85,24 @@ function populateModalDropdown() {
 
     let hasAnyLabeling = false;
     state.curriculum.units.forEach(unit => {
-      const group = document.createElement('optgroup');
-      group.label = unit.unit_name;
+      // Make unit name line directly clickable
+      const unitOpt = document.createElement('option');
+      unitOpt.value = `unit:${unit.unit_name}`;
+      unitOpt.textContent = unit.unit_name;
+      unitOpt.style.fontWeight = 'bold';
+      dropdown.appendChild(unitOpt);
+
       unit.lessons.forEach(l => {
         // Only include genuine instructional lessons (Dars), ignore intros and summaries
         if (!l.lesson_name.startsWith('الدرس')) return;
         if (l.labeling_count && l.labeling_count > 0) {
           const opt = document.createElement('option');
           opt.value = l.lesson_name;
-          opt.textContent = `${l.lesson_name} (🏷️ ${l.labeling_count})`;
-          group.appendChild(opt);
+          opt.textContent = `\u00A0\u00A0\u00A0\u00A0${l.lesson_name} (🏷️ ${l.labeling_count})`;
+          dropdown.appendChild(opt);
           hasAnyLabeling = true;
         }
       });
-      if (group.children.length > 0) dropdown.appendChild(group);
     });
 
     if (!hasAnyLabeling && totalLabel === 0) {
@@ -120,36 +124,49 @@ function populateModalDropdown() {
     if (!state.curriculum) return;
 
     state.curriculum.units.forEach(unit => {
-      const group = document.createElement('optgroup');
-      group.label = unit.unit_name;
+      // Make unit name line directly clickable
+      const unitOpt = document.createElement('option');
+      unitOpt.value = `unit:${unit.unit_name}`;
+      unitOpt.textContent = unit.unit_name;
+      unitOpt.style.fontWeight = 'bold';
+      dropdown.appendChild(unitOpt);
+
       unit.lessons.forEach(l => {
         // Only include genuine instructional lessons (Dars)
         if (!l.lesson_name.startsWith('الدرس')) return;
         if (l.has_diagrams && l.diagram_count > 0) {
           const opt = document.createElement('option');
           opt.value = l.lesson_name;
-          opt.textContent = `${l.lesson_name} (🖼️ ${l.diagram_count})`;
-          group.appendChild(opt);
+          opt.textContent = `\u00A0\u00A0\u00A0\u00A0${l.lesson_name} (🖼️ ${l.diagram_count})`;
+          dropdown.appendChild(opt);
         }
       });
-      if (group.children.length > 0) dropdown.appendChild(group);
     });
   } else {
     // Theory mode: list all genuine instructional lessons (Dars)
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all';
+    allOpt.textContent = `All Units & Lessons in Semester ${state.semester}`;
+    dropdown.appendChild(allOpt);
+
     if (!state.curriculum) return;
 
     state.curriculum.units.forEach(unit => {
-      const group = document.createElement('optgroup');
-      group.label = unit.unit_name;
+      // Make unit name line directly clickable
+      const unitOpt = document.createElement('option');
+      unitOpt.value = `unit:${unit.unit_name}`;
+      unitOpt.textContent = unit.unit_name;
+      unitOpt.style.fontWeight = 'bold';
+      dropdown.appendChild(unitOpt);
+
       unit.lessons.forEach(l => {
         // Only include genuine instructional lessons (Dars)
         if (!l.lesson_name.startsWith('الدرس')) return;
         const opt = document.createElement('option');
         opt.value = l.lesson_name;
-        opt.textContent = l.lesson_name;
-        group.appendChild(opt);
+        opt.textContent = `\u00A0\u00A0\u00A0\u00A0${l.lesson_name}`;
+        dropdown.appendChild(opt);
       });
-      if (group.children.length > 0) dropdown.appendChild(group);
     });
   }
 }
@@ -198,13 +215,27 @@ function setModalTab(type) {
 }
 
 async function confirmStartAssessment() {
-  const lesson = document.getElementById('modalLessonDropdown').value;
+  const selectedVal = document.getElementById('modalLessonDropdown').value;
   const customTopicInput = document.getElementById('modalCustomTopic');
   const customTopic = customTopicInput ? customTopicInput.value.trim() : '';
   const qType = document.getElementById('modalQuestionType') ? document.getElementById('modalQuestionType').value : 'both';
   const qCount = document.getElementById('modalQuestionCount') ? parseInt(document.getElementById('modalQuestionCount').value, 10) : 5;
 
-  const targetTopic = customTopic || lesson || 'General Science';
+  let unit = null;
+  let lesson = null;
+  let targetTopic = customTopic || '';
+
+  if (selectedVal && selectedVal.startsWith('unit:')) {
+    unit = selectedVal.replace('unit:', '');
+    if (!targetTopic) targetTopic = unit;
+  } else if (selectedVal === 'all') {
+    lesson = 'all';
+    if (!targetTopic) targetTopic = `All Semester ${state.semester}`;
+  } else {
+    lesson = selectedVal;
+    if (!targetTopic) targetTopic = lesson || 'General Science';
+  }
+
   closeAssessmentModal();
 
   state.score = { correct: 0, total: 0 };
@@ -252,6 +283,7 @@ async function confirmStartAssessment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           semester: state.semester,
+          unit: unit,
           lesson: lesson,
           topic: targetTopic,
           question_type: qType,
@@ -278,7 +310,8 @@ async function confirmStartAssessment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           semester: state.semester,
-          lesson: lesson,
+          unit: unit,
+          lesson: lesson || 'all',
           topic: targetTopic,
           limit: 5
         })
@@ -338,7 +371,8 @@ async function confirmStartAssessment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           semester: state.semester,
-          lesson: lesson,
+          unit: unit,
+          lesson: lesson || 'all',
           topic: targetTopic,
           limit: 999
         })
@@ -582,72 +616,6 @@ function createProgressiveDiagramWidget(totalDiagrams, qCount) {
       scrollToBottom();
     }
   };
-}
-
-// Render Diagram Assessment
-function renderDiagramWidget(data) {
-  const container = document.getElementById('messagesContainer');
-  const row = document.createElement('div');
-  row.className = 'message-row bot';
-
-  const widget = document.createElement('div');
-  widget.className = 'assessment-widget';
-
-  widget.innerHTML = `
-    <div class="widget-header">
-      <span class="widget-title">🖼️ Diagram Cards (${data.cards.length} Diagrams)</span>
-    </div>
-    <div class="widget-body" id="diagramCardsList"></div>
-  `;
-
-  const target = widget.querySelector('#diagramCardsList');
-
-  data.cards.forEach((c, idx) => {
-    const cardEl = document.createElement('div');
-    cardEl.className = 'diagram-inline-view';
-
-    cardEl.innerHTML = `
-      <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">#${idx + 1} — ${escapeHtml(c.lesson)}</div>
-      <img class="diagram-inline-img" src="${c.image_url}" alt="Diagram" onclick="window.open('${c.image_url}', '_blank')">
-
-      <!-- Q1 Short -->
-      <div class="question-item">
-        <div class="question-text"><strong>Q1:</strong> ${escapeHtml(c.short_question.question)}</div>
-        <button class="toggle-inline-btn" onclick="toggleAnswer(this)">Show Answer</button>
-        <div class="inline-answer-box" style="display: none;">${escapeHtml(c.short_question.answer)}</div>
-      </div>
-
-      <!-- Q2 MCQ -->
-      <div class="question-item">
-        <div class="question-text"><strong>Q2:</strong> ${escapeHtml(c.mcq.question)}</div>
-        <div class="options-list"></div>
-      </div>
-
-      <!-- Q3 Reasoning -->
-      <div class="question-item">
-        <div class="question-text"><strong>Q3:</strong> ${escapeHtml(c.reasoning_question.question)}</div>
-        <button class="toggle-inline-btn" onclick="toggleAnswer(this)">Show Answer</button>
-        <div class="inline-answer-box" style="display: none;">${escapeHtml(c.reasoning_question.answer)}</div>
-      </div>
-    `;
-
-    // MCQ choices
-    const optList = cardEl.querySelector('.options-list');
-    Object.entries(c.mcq.options).forEach(([letter, text]) => {
-      const btn = document.createElement('button');
-      btn.className = 'option-btn';
-      btn.innerHTML = `<strong style="width: 18px;">${letter}</strong> <span>${escapeHtml(text)}</span>`;
-      btn.onclick = () => handleOptionClick(btn, optList, letter, c.mcq.correct, c.mcq.explanation);
-      optList.appendChild(btn);
-    });
-
-    target.appendChild(cardEl);
-  });
-
-  row.innerHTML = `<div class="message-avatar">✦</div>`;
-  row.appendChild(widget);
-  container.appendChild(row);
-  scrollToBottom();
 }
 
 // Render Interactive Labeling Assessment
