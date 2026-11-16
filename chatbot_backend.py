@@ -267,6 +267,16 @@ class DiagramAssessmentRequest(BaseModel):
     topic: Optional[str] = None
     num_questions: Optional[int] = 3
 
+class SingleDiagramQuestionRequest(BaseModel):
+    diagram_id: int
+    num_questions: Optional[int] = 3
+
+class DiagramListRequest(BaseModel):
+    semester: int
+    lesson: Optional[str] = "all"
+    topic: Optional[str] = None
+    limit: Optional[int] = 5
+
 class LabelingAssessmentRequest(BaseModel):
     semester: int
     lesson: Optional[str] = "all"
@@ -374,9 +384,14 @@ def get_curriculum(semester: int = Query(1, ge=1, le=3)):
             diag_counts[l] = diag_counts.get(l, 0) + 1
         total_diag = len(diag_bank)
 
-    # Group into Units
+    # Group into Units (ONLY genuine lessons / Dars; skips introductory and summary phases)
     units_dict = {}
     for item in toc_list:
+        l_name = item["lesson"]
+        # Consider only genuine Dars (lessons), exclude introductory and summary phases
+        if not l_name.startswith("الدرس"):
+            continue
+
         u_name = item["unit"]
         if u_name not in units_dict:
             units_dict[u_name] = {
@@ -384,7 +399,6 @@ def get_curriculum(semester: int = Query(1, ge=1, le=3)):
                 "chapter_name": item["chapter"],
                 "lessons": []
             }
-        l_name = item["lesson"]
         cnt = diag_counts.get(l_name, 0)
         lbl_cnt = label_counts.get(l_name, 0)
         units_dict[u_name]["lessons"].append({
@@ -397,12 +411,192 @@ def get_curriculum(semester: int = Query(1, ge=1, le=3)):
             "labeling_count": lbl_cnt
         })
 
+    valid_units = [u for u in units_dict.values() if u["lessons"]]
+
     return {
         "semester": semester,
         "title": f"Grade 8 - Semester {semester} Science (علوم الصف الثاني المتوسط)",
-        "units": list(units_dict.values()),
+        "units": valid_units,
         "total_diagrams": total_diag,
         "total_labeling_diagrams": total_label
+    }
+
+
+@app.post("/api/assessment/diagram/list")
+def get_diagrams_list_for_assessment(req: DiagramListRequest):
+    """
+    Returns diagram metadata list (fast, no LLM call) so the frontend
+    can progressively request questions per diagram and render them one by one.
+    """
+    limit_cnt = req.limit or 5
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            if req.lesson and req.lesson != "all":
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
+                    FROM diagram_metadata
+                    WHERE semester = %s AND lesson = %s AND is_useful_for_questions = 'YES'
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, req.lesson, limit_cnt))
+            else:
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
+                    FROM diagram_metadata
+                    WHERE semester = %s AND is_useful_for_questions = 'YES'
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, limit_cnt))
+            rows = cur.fetchall()
+        conn.close()
+    except Exception as e:
+        print(f"[MySQL Diagram List Error] {e}")
+        rows = []
+
+    if not rows:
+        rows = load_diagrams_bank(req.semester)[:limit_cnt]
+
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"No approved diagrams found for semester {req.semester}")
+
+    diagrams = []
+    for r in rows:
+        img_rel = r.get("image_path", "").replace("\\", "/")
+        if not img_rel.startswith("/"):
+            img_rel = "/" + img_rel
+        diagrams.append({
+            "id": r["id"],
+            "semester": r["semester"],
+            "lesson": r.get("lesson", "Science Lesson"),
+            "description": r.get("description", "Scientific textbook illustration"),
+            "image_url": img_rel
+        })
+
+    return {
+        "semester": req.semester,
+        "total": len(diagrams),
+        "diagrams": diagrams
+    }
+
+
+@app.post("/api/assessment/diagram/generate-single")
+def generate_single_diagram_questions(req: SingleDiagramQuestionRequest):
+    """
+    Generates EXACTLY num_questions for a single diagram.
+    Returns structured questions array (mix of MCQ, Short, and Reasoning).
+    """
+    num_q = max(1, min(req.num_questions or 3, 10))
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
+                FROM diagram_metadata
+                WHERE id = %s;
+            """, (req.diagram_id,))
+            row = cur.fetchone()
+        conn.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    img_rel = row.get("image_path", "").replace("\\", "/")
+    if not img_rel.startswith("/"):
+        img_rel = "/" + img_rel
+
+    desc = row.get("description", "Scientific illustration")
+    lesson_name = row.get("lesson", "Science Lesson")
+
+    prompt = f"""You are an educational assessment author inspecting this Saudi Grade 8 Science diagram.
+DIAGRAM CONTEXT:
+- Lesson: {lesson_name}
+- Detailed Description: {desc}
+
+CRITICAL TASK:
+Generate EXACTLY {num_q} distinct educational questions testing student comprehension of this specific illustration.
+Mix the questions appropriately among:
+- 'mcq': Multiple Choice (4 options: A, B, C, D with correct option and concise explanation).
+- 'short': Concise factual question with model answer.
+- 'reasoning': Scientific reasoning question ('Why' / 'How') with model explanation.
+
+OUTPUT FORMAT (STRICT JSON ONLY):
+{{
+  "diagram_id": {row['id']},
+  "lesson": "{lesson_name}",
+  "image_url": "{img_rel}",
+  "total_questions": {num_q},
+  "questions": [
+    {{
+      "type": "mcq",
+      "question": "Question text...",
+      "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+      "correct": "A",
+      "explanation": "Why option A is correct..."
+    }},
+    {{
+      "type": "short",
+      "question": "Question text...",
+      "answer": "Concise factual answer..."
+    }}
+  ]
+}}
+Ensure the "questions" array contains EXACTLY {num_q} items."""
+
+    try:
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        q_data = json.loads(res.choices[0].message.content)
+        questions = q_data.get("questions", [])
+        if not questions:
+            questions = []
+            if "mcq" in q_data:
+                m = q_data["mcq"]
+                questions.append({"type": "mcq", **m})
+            if "short_question" in q_data:
+                s = q_data["short_question"]
+                questions.append({"type": "short", **s})
+            if "reasoning_question" in q_data:
+                r_q = q_data["reasoning_question"]
+                questions.append({"type": "reasoning", **r_q})
+    except Exception as err:
+        print(f"[Single Diagram Question Authoring Error] {err}")
+        questions = [
+            {
+                "type": "short",
+                "question": f"What key component or process is depicted in this {lesson_name} diagram?",
+                "answer": desc[:200]
+            }
+        ]
+        if num_q >= 2:
+            questions.append({
+                "type": "mcq",
+                "question": f"Based on this diagram of {lesson_name}, which component is primarily highlighted?",
+                "options": {"A": "Core active organ/component", "B": "Inactive membrane", "C": "External artifact", "D": "Support boundary"},
+                "correct": "A",
+                "explanation": "Derived directly from the diagram structure."
+            })
+        if num_q >= 3:
+            questions.append({
+                "type": "reasoning",
+                "question": f"Why is this mechanism critical in {lesson_name}?",
+                "answer": "It facilitates the fundamental physiological or physical transport reaction."
+            })
+
+    # Slice to guarantee exact count
+    questions = questions[:num_q]
+
+    return {
+        "diagram_id": row["id"],
+        "lesson": lesson_name,
+        "description": desc,
+        "image_url": img_rel,
+        "total_questions": len(questions),
+        "questions": questions
     }
 
 
@@ -685,6 +879,18 @@ OUTPUT FORMAT: Return ONLY valid JSON with this exact schema:
         data = json.loads(content)
         data["assessment_type"] = "theory"
         data["semester"] = req.semester
+
+        # Guarantee exact question counts requested by teacher/student
+        if num_mcqs > 0:
+            data["mcqs"] = data.get("mcqs", [])[:num_mcqs]
+        else:
+            data["mcqs"] = []
+
+        if num_short > 0:
+            data["short_questions"] = data.get("short_questions", [])[:num_short]
+        else:
+            data["short_questions"] = []
+
         return data
     except Exception as e:
         print(f"[OpenAI Theory Assessment Error] {e}")

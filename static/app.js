@@ -28,11 +28,15 @@ function resetChat() {
   state.chatHistory = [];
   const container = document.getElementById('messagesContainer');
   if (container) container.innerHTML = '';
+  const topNav = document.getElementById('topNavBar');
+  if (topNav) topNav.style.display = 'none';
 }
 
 async function startDirectLabeling(lesson = 'all') {
   appendUserMessage(`Start Interactive Labeling Quiz (Semester ${state.semester})`);
   const thinkingEl = appendThinkingIndicator();
+  const topNav = document.getElementById('topNavBar');
+  if (topNav) topNav.style.display = 'flex';
   try {
     const res = await fetch('/api/assessment/labeling', {
       method: 'POST',
@@ -40,7 +44,7 @@ async function startDirectLabeling(lesson = 'all') {
       body: JSON.stringify({
         semester: state.semester,
         lesson: lesson,
-        limit: 3
+        limit: 999
       })
     });
     thinkingEl.remove();
@@ -84,7 +88,8 @@ function populateModalDropdown() {
       const group = document.createElement('optgroup');
       group.label = unit.unit_name;
       unit.lessons.forEach(l => {
-        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        // Only include genuine instructional lessons (Dars), ignore intros and summaries
+        if (!l.lesson_name.startsWith('الدرس')) return;
         if (l.labeling_count && l.labeling_count > 0) {
           const opt = document.createElement('option');
           opt.value = l.lesson_name;
@@ -118,7 +123,8 @@ function populateModalDropdown() {
       const group = document.createElement('optgroup');
       group.label = unit.unit_name;
       unit.lessons.forEach(l => {
-        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        // Only include genuine instructional lessons (Dars)
+        if (!l.lesson_name.startsWith('الدرس')) return;
         if (l.has_diagrams && l.diagram_count > 0) {
           const opt = document.createElement('option');
           opt.value = l.lesson_name;
@@ -129,14 +135,15 @@ function populateModalDropdown() {
       if (group.children.length > 0) dropdown.appendChild(group);
     });
   } else {
-    // Theory mode: list all lessons
+    // Theory mode: list all genuine instructional lessons (Dars)
     if (!state.curriculum) return;
 
     state.curriculum.units.forEach(unit => {
       const group = document.createElement('optgroup');
       group.label = unit.unit_name;
       unit.lessons.forEach(l => {
-        if (l.lesson_name.includes('تمهيد') || l.lesson_name.includes('فهرس')) return;
+        // Only include genuine instructional lessons (Dars)
+        if (!l.lesson_name.startsWith('الدرس')) return;
         const opt = document.createElement('option');
         opt.value = l.lesson_name;
         opt.textContent = l.lesson_name;
@@ -202,6 +209,18 @@ async function confirmStartAssessment() {
 
   state.score = { correct: 0, total: 0 };
 
+  // Show Top Navigation Bar with Back Arrow whenever an assessment starts
+  const topNav = document.getElementById('topNavBar');
+  const topNavTitle = document.getElementById('topNavTitle');
+  if (topNav) {
+    topNav.style.display = 'flex';
+    if (topNavTitle) {
+      if (state.assessmentType === 'theory') topNavTitle.textContent = `Theory Quiz (${qCount} Questions)`;
+      else if (state.assessmentType === 'diagram') topNavTitle.textContent = `Diagram Assessment (${qCount} Questions/Diagram)`;
+      else if (state.assessmentType === 'labeling') topNavTitle.textContent = `Interactive Labeling Mode`;
+    }
+  }
+
   if (state.assessmentType === 'theory') {
     let num_mcq = 0;
     let num_short = 0;
@@ -212,9 +231,17 @@ async function confirmStartAssessment() {
       num_mcq = 0;
       num_short = qCount;
     } else {
-      // 'both' (split proportionally)
-      num_mcq = Math.max(1, Math.ceil(qCount * 0.6));
-      num_short = Math.max(1, qCount - num_mcq);
+      // 'both': strictly sum to qCount (2 -> 1+1, 3 -> 2+1, 5 -> 3+2)
+      if (qCount === 2) {
+        num_mcq = 1;
+        num_short = 1;
+      } else if (qCount === 3) {
+        num_mcq = 2;
+        num_short = 1;
+      } else { // 5
+        num_mcq = 3;
+        num_short = 2;
+      }
     }
 
     appendUserMessage(`Generate Theory Assessment for: "${targetTopic}" (${qCount} questions • ${qType.toUpperCase()})`);
@@ -241,23 +268,63 @@ async function confirmStartAssessment() {
       appendBotMessage(`Error generating assessment: ${e.message}`);
     }
   } else if (state.assessmentType === 'diagram') {
-    appendUserMessage(`Show Diagram Assessment for: "${targetTopic || 'All'}"`);
+    appendUserMessage(`Show Diagram Assessment for: "${targetTopic || 'All'}" (${qCount} questions per diagram)`);
     const thinkingEl = appendThinkingIndicator();
+
     try {
-      const res = await fetch('/api/assessment/diagram', {
+      // 1. Fast metadata fetch (<30ms) to get the diagrams list
+      const listRes = await fetch('/api/assessment/diagram/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           semester: state.semester,
           lesson: lesson,
           topic: targetTopic,
-          num_questions: qCount
+          limit: 5
         })
       });
+
+      if (!listRes.ok) throw new Error('Failed to find diagrams for this lesson');
+      const listData = await listRes.json();
+      const diagrams = listData.diagrams || [];
+
+      if (diagrams.length === 0) {
+        thinkingEl.remove();
+        appendBotMessage(`No approved diagrams found for this lesson in Semester ${state.semester}.`);
+        return;
+      }
+
+      // 2. Remove thinking indicator and mount progressive widget on screen immediately!
       thinkingEl.remove();
-      if (!res.ok) throw new Error('Failed to load diagrams');
-      const data = await res.json();
-      renderDiagramWidget(data);
+      const widgetObj = createProgressiveDiagramWidget(diagrams.length, qCount);
+
+      // 3. Sequentially generate questions for each diagram; each card appears on screen immediately upon arrival!
+      for (let i = 0; i < diagrams.length; i++) {
+        const diag = diagrams[i];
+        widgetObj.updateStatus(`Generating ${qCount} questions for Diagram ${i + 1} of ${diagrams.length}...`);
+
+        try {
+          const singleRes = await fetch('/api/assessment/diagram/generate-single', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              diagram_id: diag.id,
+              num_questions: qCount
+            })
+          });
+
+          if (singleRes.ok) {
+            const cardData = await singleRes.json();
+            widgetObj.appendCard(cardData, i);
+          } else {
+            console.error(`Failed to generate questions for diagram ${diag.id}`);
+          }
+        } catch (diagErr) {
+          console.error(`Error on diagram ${diag.id}:`, diagErr);
+        }
+      }
+
+      widgetObj.finish();
     } catch (e) {
       thinkingEl.remove();
       appendBotMessage(`Error loading diagrams: ${e.message}`);
@@ -297,8 +364,16 @@ function renderTheoryWidget(data) {
   widget.className = 'assessment-widget';
 
   widget.innerHTML = `
-    <div class="widget-header">
-      <span class="widget-title">📝 ${escapeHtml(data.title || data.lesson)}</span>
+    <div class="widget-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button onclick="resetChat()" title="Back to Home" style="background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: inline-flex; align-items: center; padding: 2px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <span class="widget-title">📝 ${escapeHtml(data.title || data.lesson)}</span>
+      </div>
       <span class="widget-score" id="widgetScoreTracker">Score: 0 / 0</span>
     </div>
     <div class="widget-body">
@@ -309,13 +384,17 @@ function renderTheoryWidget(data) {
         </div>
       ` : ''}
 
-      <!-- MCQs -->
-      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px;">Multiple Choice Questions</div>
-      <div id="mcqContainer" style="display: flex; flex-direction: column; gap: 18px;"></div>
+      ${data.mcqs && data.mcqs.length > 0 ? `
+        <!-- MCQs -->
+        <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-bottom: 8px;">Multiple Choice Questions</div>
+        <div id="mcqContainer" style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 16px;"></div>
+      ` : '<div id="mcqContainer" style="display: none;"></div>'}
 
-      <!-- Short Questions -->
-      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-top: 10px;">Short Answer Questions</div>
-      <div id="shortContainer" style="display: flex; flex-direction: column; gap: 14px;"></div>
+      ${data.short_questions && data.short_questions.length > 0 ? `
+        <!-- Short Questions -->
+        <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-top: 10px; margin-bottom: 8px;">Short Answer Questions</div>
+        <div id="shortContainer" style="display: flex; flex-direction: column; gap: 14px;"></div>
+      ` : '<div id="shortContainer" style="display: none;"></div>'}
     </div>
   `;
 
@@ -391,6 +470,118 @@ function toggleAnswer(btn) {
   const hidden = box.style.display === 'none';
   box.style.display = hidden ? 'block' : 'none';
   btn.textContent = hidden ? 'Hide Answer' : 'Show Answer';
+}
+
+// Progressive Diagram Assessment Widget (renders diagram cards one by one as they arrive!)
+function createProgressiveDiagramWidget(totalDiagrams, qCount) {
+  const container = document.getElementById('messagesContainer');
+  const row = document.createElement('div');
+  row.className = 'message-row bot';
+
+  const widget = document.createElement('div');
+  widget.className = 'assessment-widget';
+
+  widget.innerHTML = `
+    <div class="widget-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button onclick="resetChat()" title="Back to Home" style="background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: inline-flex; align-items: center; padding: 2px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <span class="widget-title">🖼️ Diagram Assessment (${totalDiagrams} Diagrams • ${qCount} Questions each)</span>
+      </div>
+    </div>
+    <div class="widget-body" id="diagramCardsList"></div>
+    <div class="diagram-progress-status" style="padding: 12px 14px; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+      <span class="thinking-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+      <span class="status-text">Preparing diagrams...</span>
+    </div>
+  `;
+
+  row.innerHTML = `<div class="message-avatar">✦</div>`;
+  row.appendChild(widget);
+  container.appendChild(row);
+  scrollToBottom();
+
+  const cardsList = widget.querySelector('#diagramCardsList');
+  const statusContainer = widget.querySelector('.diagram-progress-status');
+  const statusText = widget.querySelector('.status-text');
+
+  return {
+    updateStatus(msg) {
+      if (statusText) statusText.textContent = msg;
+      scrollToBottom();
+    },
+    appendCard(card, idx) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'diagram-inline-view';
+      cardEl.style.marginBottom = '22px';
+      cardEl.style.border = '1px solid var(--border-light, #e2e8f0)';
+      cardEl.style.borderRadius = '10px';
+      cardEl.style.padding = '14px';
+      cardEl.style.background = '#ffffff';
+
+      let questionsHtml = '';
+      const questions = card.questions || [];
+
+      questions.forEach((q, qIdx) => {
+        if (q.type === 'mcq') {
+          questionsHtml += `
+            <div class="question-item" style="margin-top: 14px;">
+              <div class="question-text"><strong>Q${qIdx + 1} (MCQ):</strong> ${escapeHtml(q.question)}</div>
+              <div class="options-list" data-cardidx="${idx}" data-qidx="${qIdx}"></div>
+            </div>
+          `;
+        } else {
+          const qLabel = q.type === 'reasoning' ? 'Scientific Reasoning' : 'Short Question';
+          questionsHtml += `
+            <div class="question-item" style="margin-top: 14px;">
+              <div class="question-text"><strong>Q${qIdx + 1} (${qLabel}):</strong> ${escapeHtml(q.question)}</div>
+              <button class="toggle-inline-btn" onclick="toggleAnswer(this)" style="margin-top: 6px;">Show Model Answer</button>
+              <div class="inline-answer-box" style="display: none; margin-top: 6px;">${escapeHtml(q.answer || '')}</div>
+            </div>
+          `;
+        }
+      });
+
+      cardEl.innerHTML = `
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">
+          #${idx + 1} — ${escapeHtml(card.lesson)}
+        </div>
+        <img class="diagram-inline-img" src="${card.image_url}" alt="Diagram" onclick="window.open('${card.image_url}', '_blank')" style="cursor: zoom-in; max-height: 400px; object-fit: contain; width: 100%; border-radius: 6px; background: #fafafa; border: 1px solid var(--border-light);">
+        <div class="card-questions-wrap" style="margin-top: 12px;">
+          ${questionsHtml}
+        </div>
+      `;
+
+      // Attach MCQ click events
+      questions.forEach((q, qIdx) => {
+        if (q.type === 'mcq' && q.options) {
+          const optList = cardEl.querySelector(`.options-list[data-cardidx="${idx}"][data-qidx="${qIdx}"]`);
+          if (optList) {
+            Object.entries(q.options).forEach(([letter, text]) => {
+              const btn = document.createElement('button');
+              btn.className = 'option-btn';
+              btn.innerHTML = `<strong style="width: 18px;">${letter}</strong> <span>${escapeHtml(text)}</span>`;
+              btn.onclick = () => handleOptionClick(btn, optList, letter, q.correct, q.explanation);
+              optList.appendChild(btn);
+            });
+          }
+        }
+      });
+
+      cardsList.appendChild(cardEl);
+      scrollToBottom();
+    },
+    finish() {
+      if (statusContainer) {
+        statusContainer.style.display = 'none';
+      }
+      scrollToBottom();
+    }
+  };
 }
 
 // Render Diagram Assessment
@@ -469,8 +660,16 @@ function renderLabelingWidget(data) {
   widget.className = 'assessment-widget';
 
   widget.innerHTML = `
-    <div class="widget-header">
-      <span class="widget-title">🏷️ Interactive Labeling Quiz</span>
+    <div class="widget-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button onclick="resetChat()" title="Back to Home" style="background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: inline-flex; align-items: center; padding: 2px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <span class="widget-title">🏷️ Interactive Labeling Quiz</span>
+      </div>
       <span class="score-badge" id="labelingScoreTracker">Score: 0 / 0</span>
     </div>
     <div class="widget-body" id="labelingList"></div>
