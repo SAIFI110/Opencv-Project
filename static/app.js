@@ -32,31 +32,6 @@ function resetChat() {
   if (topNav) topNav.style.display = 'none';
 }
 
-async function startDirectLabeling(lesson = 'all') {
-  appendUserMessage(`Start Interactive Labeling Quiz (Semester ${state.semester})`);
-  const thinkingEl = appendThinkingIndicator();
-  const topNav = document.getElementById('topNavBar');
-  if (topNav) topNav.style.display = 'flex';
-  try {
-    const res = await fetch('/api/assessment/labeling', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        semester: state.semester,
-        lesson: lesson,
-        limit: 999
-      })
-    });
-    thinkingEl.remove();
-    if (!res.ok) throw new Error('Failed to load labeling quiz');
-    const data = await res.json();
-    renderLabelingWidget(data);
-  } catch (e) {
-    thinkingEl.remove();
-    appendBotMessage(`Error loading labeling quiz: ${e.message}`);
-  }
-}
-
 async function loadCurriculum(sem) {
   try {
     const res = await fetch(`/api/curriculum?semester=${sem}`);
@@ -215,25 +190,23 @@ function setModalTab(type) {
 }
 
 async function confirmStartAssessment() {
-  const selectedVal = document.getElementById('modalLessonDropdown').value;
-  const customTopicInput = document.getElementById('modalCustomTopic');
-  const customTopic = customTopicInput ? customTopicInput.value.trim() : '';
+  const selectedVal = document.getElementById('modalLessonDropdown') ? document.getElementById('modalLessonDropdown').value : '';
   const qType = document.getElementById('modalQuestionType') ? document.getElementById('modalQuestionType').value : 'both';
   const qCount = document.getElementById('modalQuestionCount') ? parseInt(document.getElementById('modalQuestionCount').value, 10) : 5;
 
   let unit = null;
   let lesson = null;
-  let targetTopic = customTopic || '';
+  let targetTopic = '';
 
   if (selectedVal && selectedVal.startsWith('unit:')) {
     unit = selectedVal.replace('unit:', '');
-    if (!targetTopic) targetTopic = unit;
+    targetTopic = unit;
   } else if (selectedVal === 'all') {
     lesson = 'all';
-    if (!targetTopic) targetTopic = `All Semester ${state.semester}`;
+    targetTopic = `All Semester ${state.semester}`;
   } else {
     lesson = selectedVal;
-    if (!targetTopic) targetTopic = lesson || 'General Science';
+    targetTopic = lesson || 'General Science';
   }
 
   closeAssessmentModal();
@@ -253,52 +226,64 @@ async function confirmStartAssessment() {
   }
 
   if (state.assessmentType === 'theory') {
-    let num_mcq = 0;
-    let num_short = 0;
+    const qTypes = [];
     if (qType === 'mcq') {
-      num_mcq = qCount;
-      num_short = 0;
+      for (let i = 0; i < qCount; i++) qTypes.push('mcq');
     } else if (qType === 'short') {
-      num_mcq = 0;
-      num_short = qCount;
+      for (let i = 0; i < qCount; i++) qTypes.push('short');
     } else {
-      // 'both': strictly sum to qCount (2 -> 1+1, 3 -> 2+1, 5 -> 3+2)
+      // 'both' strictly sums to qCount (2 -> 1+1, 3 -> 2+1, 5 -> 3+2)
       if (qCount === 2) {
-        num_mcq = 1;
-        num_short = 1;
+        qTypes.push('mcq', 'short');
       } else if (qCount === 3) {
-        num_mcq = 2;
-        num_short = 1;
+        qTypes.push('mcq', 'mcq', 'short');
       } else { // 5
-        num_mcq = 3;
-        num_short = 2;
+        qTypes.push('mcq', 'mcq', 'mcq', 'short', 'short');
       }
     }
 
     appendUserMessage(`Generate Theory Assessment for: "${targetTopic}" (${qCount} questions • ${qType.toUpperCase()})`);
-    const thinkingEl = appendThinkingIndicator();
-    try {
-      const res = await fetch('/api/assessment/theory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          semester: state.semester,
-          unit: unit,
-          lesson: lesson,
-          topic: targetTopic,
-          question_type: qType,
-          num_mcq: num_mcq,
-          num_short: num_short
-        })
-      });
-      thinkingEl.remove();
-      if (!res.ok) throw new Error('Failed to generate assessment');
-      const data = await res.json();
-      renderTheoryWidget(data);
-    } catch (e) {
-      thinkingEl.remove();
-      appendBotMessage(`Error generating assessment: ${e.message}`);
+
+    // Mount progressive widget immediately on screen
+    const widgetObj = createProgressiveTheoryWidget(targetTopic, qTypes.length);
+    const prevQuestions = [];
+
+    for (let i = 0; i < qTypes.length; i++) {
+      const currentType = qTypes[i];
+      const typeLabel = currentType === 'mcq' ? 'MCQ' : 'Short Question';
+      widgetObj.updateStatus(`Generating Question ${i + 1} of ${qTypes.length} (${typeLabel})...`);
+
+      try {
+        const res = await fetch('/api/assessment/theory/generate-single', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            semester: state.semester,
+            unit: unit,
+            lesson: lesson,
+            topic: targetTopic,
+            q_type: currentType,
+            question_num: i + 1,
+            total_questions: qTypes.length,
+            previous_questions: prevQuestions
+          })
+        });
+
+        if (res.ok) {
+          const qData = await res.json();
+          widgetObj.appendQuestion(qData, i);
+          if (qData.question) {
+            prevQuestions.push(qData.question);
+          }
+        } else {
+          console.error(`Failed to generate question ${i + 1}`);
+        }
+      } catch (err) {
+        console.error(`Error generating question ${i + 1}:`, err);
+      }
     }
+
+    widgetObj.finish();
   } else if (state.assessmentType === 'diagram') {
     appendUserMessage(`Show Diagram Assessment for: "${targetTopic || 'All'}" (${qCount} questions per diagram)`);
     const thinkingEl = appendThinkingIndicator();
@@ -388,8 +373,8 @@ async function confirmStartAssessment() {
   }
 }
 
-// Render Theory Assessment inside chat as clean widget
-function renderTheoryWidget(data) {
+// Progressive Theory Assessment Widget (displays questions one by one as they are generated)
+function createProgressiveTheoryWidget(title, totalQuestions) {
   const container = document.getElementById('messagesContainer');
   const row = document.createElement('div');
   row.className = 'message-row bot';
@@ -406,69 +391,74 @@ function renderTheoryWidget(data) {
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
         </button>
-        <span class="widget-title">📝 ${escapeHtml(data.title || data.lesson)}</span>
+        <span class="widget-title">📝 ${escapeHtml(title)}</span>
       </div>
       <span class="widget-score" id="widgetScoreTracker">Score: 0 / 0</span>
     </div>
     <div class="widget-body">
-      ${data.diagram_url ? `
-        <div style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 10px; background: #fafafa; text-align: center; margin-bottom: 12px;">
-          <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px;">🖼️ Reference Diagram from Textbook</div>
-          <img src="${data.diagram_url}" style="max-width: 100%; max-height: 360px; object-fit: contain; background: white; border-radius: 4px; cursor: zoom-in;" title="Click to view full size" onclick="window.open('${data.diagram_url}', '_blank')">
-        </div>
-      ` : ''}
-
-      ${data.mcqs && data.mcqs.length > 0 ? `
-        <!-- MCQs -->
-        <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-bottom: 8px;">Multiple Choice Questions</div>
-        <div id="mcqContainer" style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 16px;"></div>
-      ` : '<div id="mcqContainer" style="display: none;"></div>'}
-
-      ${data.short_questions && data.short_questions.length > 0 ? `
-        <!-- Short Questions -->
-        <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px; margin-top: 10px; margin-bottom: 8px;">Short Answer Questions</div>
-        <div id="shortContainer" style="display: flex; flex-direction: column; gap: 14px;"></div>
-      ` : '<div id="shortContainer" style="display: none;"></div>'}
+      <div id="progressiveTheoryQuestions" style="display: flex; flex-direction: column; gap: 16px;"></div>
+      <div id="theoryStatusIndicator" style="display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 14px; background: var(--bg-hover, #f1f5f9); border-radius: var(--radius-sm, 6px); font-size: 0.85rem; color: var(--text-muted, #64748b);">
+        <div style="width: 14px; height: 14px; border: 2px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <span id="theoryStatusText">Starting assessment generation...</span>
+      </div>
     </div>
   `;
-
-  // Render MCQs
-  const mcqTarget = widget.querySelector('#mcqContainer');
-  data.mcqs.forEach((mcq, idx) => {
-    const qDiv = document.createElement('div');
-    qDiv.className = 'question-item';
-    qDiv.innerHTML = `<div class="question-text">${idx + 1}. ${escapeHtml(mcq.question)}</div><div class="options-list"></div>`;
-
-    const optList = qDiv.querySelector('.options-list');
-    Object.entries(mcq.options).forEach(([letter, text]) => {
-      const btn = document.createElement('button');
-      btn.className = 'option-btn';
-      btn.innerHTML = `<strong style="width: 18px;">${letter}</strong> <span>${escapeHtml(text)}</span>`;
-      btn.onclick = () => handleOptionClick(btn, optList, letter, mcq.correct, mcq.explanation);
-      optList.appendChild(btn);
-    });
-    mcqTarget.appendChild(qDiv);
-  });
-
-  // Render Short Questions
-  const shortTarget = widget.querySelector('#shortContainer');
-  data.short_questions.forEach((sq, idx) => {
-    const qDiv = document.createElement('div');
-    qDiv.className = 'question-item';
-    qDiv.innerHTML = `
-      <div class="question-text">${idx + 1}. ${escapeHtml(sq.question)}</div>
-      <button class="toggle-inline-btn" onclick="toggleAnswer(this)">Show Answer</button>
-      <div class="inline-answer-box" style="display: none;">
-        ${escapeHtml(sq.model_answer)}
-      </div>
-    `;
-    shortTarget.appendChild(qDiv);
-  });
 
   row.innerHTML = `<div class="message-avatar">✦</div>`;
   row.appendChild(widget);
   container.appendChild(row);
   scrollToBottom();
+
+  const questionsList = widget.querySelector('#progressiveTheoryQuestions');
+  const statusContainer = widget.querySelector('#theoryStatusIndicator');
+  const statusText = widget.querySelector('#theoryStatusText');
+
+  return {
+    updateStatus(msg) {
+      if (statusText) statusText.textContent = msg;
+    },
+    appendQuestion(q, idx) {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'question-item';
+
+      if (q.type === 'mcq') {
+        qDiv.innerHTML = `
+          <div class="question-text"><strong>Q${idx + 1} (MCQ):</strong> ${escapeHtml(q.question)}</div>
+          <div class="options-list"></div>
+        `;
+        const optList = qDiv.querySelector('.options-list');
+        if (q.options) {
+          Object.entries(q.options).forEach(([letter, text]) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<strong style="width: 18px;">${letter}</strong> <span>${escapeHtml(text)}</span>`;
+            btn.onclick = () => handleOptionClick(btn, optList, letter, q.correct, q.explanation);
+            optList.appendChild(btn);
+          });
+        }
+      } else {
+        qDiv.innerHTML = `
+          <div class="question-text"><strong>Q${idx + 1} (Short Question):</strong> ${escapeHtml(q.question)}</div>
+          <div class="student-answer-wrap">
+            <textarea class="student-answer-input" placeholder="✍️ Write your answer here..." rows="3"></textarea>
+          </div>
+          <button class="toggle-inline-btn" onclick="toggleAnswer(this)" style="margin-top: 4px;">Show Actual Answer</button>
+          <div class="inline-answer-box" style="display: none; margin-top: 8px;">
+            <strong>Model Answer:</strong><br>${escapeHtml(q.model_answer || '')}
+          </div>
+        `;
+      }
+
+      questionsList.appendChild(qDiv);
+      scrollToBottom();
+    },
+    finish() {
+      if (statusContainer) {
+        statusContainer.style.display = 'none';
+      }
+      scrollToBottom();
+    }
+  };
 }
 
 function handleOptionClick(btn, optList, selectedLetter, correctLetter, explanation) {
@@ -503,7 +493,7 @@ function toggleAnswer(btn) {
   const box = btn.nextElementSibling;
   const hidden = box.style.display === 'none';
   box.style.display = hidden ? 'block' : 'none';
-  btn.textContent = hidden ? 'Hide Answer' : 'Show Answer';
+  btn.textContent = hidden ? 'Hide Actual Answer' : 'Show Actual Answer';
 }
 
 // Progressive Diagram Assessment Widget (renders diagram cards one by one as they arrive!)
@@ -573,8 +563,11 @@ function createProgressiveDiagramWidget(totalDiagrams, qCount) {
           questionsHtml += `
             <div class="question-item" style="margin-top: 14px;">
               <div class="question-text"><strong>Q${qIdx + 1} (${qLabel}):</strong> ${escapeHtml(q.question)}</div>
-              <button class="toggle-inline-btn" onclick="toggleAnswer(this)" style="margin-top: 6px;">Show Model Answer</button>
-              <div class="inline-answer-box" style="display: none; margin-top: 6px;">${escapeHtml(q.answer || '')}</div>
+              <div class="student-answer-wrap">
+                <textarea class="student-answer-input" placeholder="✍️ Write your answer here..." rows="3"></textarea>
+              </div>
+              <button class="toggle-inline-btn" onclick="toggleAnswer(this)" style="margin-top: 4px;">Show Actual Answer</button>
+              <div class="inline-answer-box" style="display: none; margin-top: 8px;"><strong>Answer:</strong><br>${escapeHtml(q.answer || '')}</div>
             </div>
           `;
         }
@@ -757,34 +750,9 @@ async function sendChatMessage() {
 
   // Direct conversational trigger for dynamic assessment
   if (mcqMatch) {
-    const count = parseInt(mcqMatch[1], 10);
-    let topic = text.replace(mcqMatch[0], '')
-      .replace(/create|generate|give me|bna do|bna ke do|chahiye|from|on|me se|in/gi, '')
-      .trim();
-    if (!topic) topic = "General Science";
-
-    const thinkingEl = appendThinkingIndicator();
-    try {
-      const res = await fetch('/api/assessment/theory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          semester: state.semester,
-          topic: topic,
-          question_type: 'mcq',
-          num_mcq: count,
-          num_short: 0
-        })
-      });
-      thinkingEl.remove();
-      if (!res.ok) throw new Error('Failed to generate assessment');
-      const data = await res.json();
-      renderTheoryWidget(data);
-      return;
-    } catch (e) {
-      thinkingEl.remove();
-      // Fallback to conversational tutor if needed
-    }
+    setModalTab('theory');
+    openAssessmentModal();
+    return;
   }
 
   if (lower.includes('labeling') || lower.includes('interactive labeling') || lower.includes('label')) {

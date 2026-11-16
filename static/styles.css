@@ -446,16 +446,53 @@ body {
 .toggle-inline-btn {
   background: none;
   border: none;
-  color: var(--text-muted);
-  font-size: 0.8rem;
+  color: var(--primary, #2563eb);
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
   text-align: left;
-  padding: 2px 0;
+  padding: 4px 0;
   text-decoration: underline;
+  display: inline-block;
 }
 
 .toggle-inline-btn:hover {
   color: var(--text-main);
+}
+
+.student-answer-wrap {
+  margin: 8px 0 6px 0;
+}
+
+.student-answer-input {
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: #ffffff;
+  border: 1.5px dashed var(--border-light, #cbd5e1);
+  border-radius: var(--radius-sm, 6px);
+  resize: vertical;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.student-answer-input:focus {
+  outline: none;
+  border: 1.5px solid var(--primary, #2563eb);
+  background: #f8fafc;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.student-answer-input::placeholder {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .inline-answer-box {
@@ -593,4 +630,60 @@ body {
 .thinking-dot {
   display: inline-block;
   animation: pulse 1.2s infinite;
+}
+
+/* Student Blank Answer Input Area */
+.student-answer-wrap {
+  margin: 10px 0 8px 0;
+}
+
+.student-answer-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: #fafbfc;
+  border: 1.5px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+  resize: vertical;
+  min-height: 72px;
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.student-answer-input:focus {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* Student Blank Answer Input Area */
+.student-answer-wrap {
+  margin: 10px 0 8px 0;
+}
+
+.student-answer-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: #fafbfc;
+  border: 1.5px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+  resize: vertical;
+  min-height: 72px;
+  outline: none;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.student-answer-input:focus {
+  background-color: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
