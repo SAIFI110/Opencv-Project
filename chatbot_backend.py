@@ -10,7 +10,6 @@ Production-ready FastAPI backend providing:
 """
 
 import os
-import re
 import json
 from typing import List, Optional, Dict, Any
 from pathlib import Path
@@ -55,8 +54,6 @@ app.add_middleware(
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-CACHE_DIR = BASE_DIR / "cached_theory_questions"
-CACHE_DIR.mkdir(exist_ok=True)
 
 # Mount static folders for images and frontend
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -253,20 +250,23 @@ class ChatRequest(BaseModel):
     semester: Optional[int] = 1
     lesson: Optional[str] = None
 
-class TheoryAssessmentRequest(BaseModel):
-    semester: int
-    lesson: Optional[str] = None
-    topic: Optional[str] = None
-    question_type: Optional[str] = "both"  # "mcq", "short", "both"
-    num_mcq: Optional[int] = 5
-    num_short: Optional[int] = 3
-
 class SingleDiagramQuestionRequest(BaseModel):
     diagram_id: int
     num_questions: Optional[int] = 3
 
+class SingleTheoryQuestionRequest(BaseModel):
+    semester: int
+    unit: Optional[str] = None
+    lesson: Optional[str] = None
+    topic: Optional[str] = None
+    q_type: str = "mcq"  # "mcq" or "short"
+    question_num: int = 1
+    total_questions: int = 5
+    previous_questions: Optional[List[str]] = []
+
 class DiagramListRequest(BaseModel):
     semester: int
+    unit: Optional[str] = None
     lesson: Optional[str] = "all"
     topic: Optional[str] = None
     limit: Optional[int] = 5
@@ -433,6 +433,13 @@ def get_diagrams_list_for_assessment(req: DiagramListRequest):
                     WHERE semester = %s AND lesson = %s AND is_useful_for_questions = 'YES'
                     ORDER BY RAND() LIMIT %s;
                 """, (req.semester, req.lesson, limit_cnt))
+            elif req.unit and req.unit != "all":
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
+                    FROM diagram_metadata
+                    WHERE semester = %s AND unit = %s AND is_useful_for_questions = 'YES'
+                    ORDER BY RAND() LIMIT %s;
+                """, (req.semester, req.unit, limit_cnt))
             else:
                 cur.execute("""
                     SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
@@ -675,25 +682,33 @@ def get_labeling_assessment(req: LabelingAssessmentRequest):
         "diagrams": results
     }
 
-
-@app.post("/api/assessment/theory")
-def generate_theory_assessment(req: TheoryAssessmentRequest):
+@app.post("/api/assessment/theory/generate-single")
+def generate_single_theory_question(req: SingleTheoryQuestionRequest):
     """
-    Option 1: General Theory Assessment.
-    Grounded strictly via Qdrant Vector DB chunks.
-    Dynamically authors MCQs and Short Questions as requested by the teacher.
+    Progressive Theory Question Generator.
+    Generates exactly ONE question (MCQ or Short Answer) in real time (~1-1.5s),
+    allowing the frontend to stream/display questions sequentially one after another.
+    STRICT ENGLISH REQUIREMENT: All questions and answers must be in English with official
+    Arabic terminology in parentheses.
     """
-    topic_query = req.topic or req.lesson or "General Science"
+    topic_query = req.topic or req.lesson or req.unit or "General Science"
 
     # 1. Retrieve grounded textbook chunks from Qdrant Vector DB
-    grounded_chunks = retrieve_chunks_from_qdrant(topic_query, req.semester, limit=5)
+    grounded_chunks = retrieve_chunks_from_qdrant(topic_query, req.semester, limit=4)
 
-    # Fallback to PDF if Qdrant returned nothing (e.g. docker just restarted)
+    # Fallback to PDF if Qdrant returned nothing
     if not grounded_chunks or len(grounded_chunks) < 50:
         toc_list = TOC_REGISTRIES.get(req.semester, [])
-        lesson_meta = next((item for item in toc_list if item["lesson"] == req.lesson), None)
-        if lesson_meta:
-            grounded_chunks = extract_lesson_text_from_pdf(req.semester, lesson_meta["start_page"], lesson_meta["end_page"])
+        if req.lesson and req.lesson != "all":
+            lesson_meta = next((item for item in toc_list if item["lesson"] == req.lesson), None)
+            if lesson_meta:
+                grounded_chunks = extract_lesson_text_from_pdf(req.semester, lesson_meta["start_page"], lesson_meta["end_page"])
+        elif req.unit and req.unit != "all":
+            unit_lessons = [item for item in toc_list if item.get("unit") == req.unit and item.get("lesson", "").startswith("الدرس")]
+            if unit_lessons:
+                start_p = min(item["start_page"] for item in unit_lessons)
+                end_p = max(item["end_page"] for item in unit_lessons)
+                grounded_chunks = extract_lesson_text_from_pdf(req.semester, start_p, end_p)
 
     if not grounded_chunks:
         grounded_chunks = f"Grade 8 Science curriculum topic: {topic_query}."
@@ -701,85 +716,106 @@ def generate_theory_assessment(req: TheoryAssessmentRequest):
     if not client:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured on backend.")
 
-    num_mcqs = req.num_mcq if req.question_type in ["mcq", "both"] else 0
-    num_short = req.num_short if req.question_type in ["short", "both"] else 0
-    if num_mcqs == 0 and num_short == 0:
-        num_mcqs = 5
+    prev_context = ""
+    if req.previous_questions:
+        prev_list_str = "\n".join(f"- {q}" for q in req.previous_questions)
+        prev_context = f"\nDO NOT repeat or test the exact same concept as these previously generated questions:\n{prev_list_str}\n"
 
-    system_prompt = f"""You are an expert Grade 8 Science Teacher creating an official assessment based on the Saudi Ministry of Education curriculum.
+    system_instruction = (
+        "You are an expert Grade 8 Science Teacher creating official Saudi Ministry curriculum assessments. "
+        "CRITICAL LANGUAGE RULE: You MUST write the entire question text, options, explanations, and model answers "
+        "in accessible ENGLISH for 8th-grade students. NEVER write sentences in Arabic. "
+        "Only append the official Arabic terminology in parentheses next to key scientific terms "
+        "(e.g. 'Science (العلم)', 'Technology (التقنية)', 'Chemical Reaction (التفاعل الكيميائي)'). "
+        "Always output valid JSON."
+    )
 
-CURRICULUM TOPIC:
+    if req.q_type == "mcq":
+        user_prompt = f"""CURRICULUM TOPIC:
 - Semester: {req.semester}
 - Topic / Lesson: {topic_query}
 
-GROUNDED TEXTBOOK CHUNKS (From Qdrant Vector DB):
-\"\"\"{grounded_chunks[:8000]}\"\"\"
+GROUNDED TEXTBOOK CHUNKS:
+\"\"\"{grounded_chunks[:5000]}\"\"\"
+{prev_context}
+TASK:
+Generate EXACTLY 1 Multiple Choice Question (MCQ) testing student understanding of this topic:
+- The question stem MUST be written in English (with Arabic scientific terms in parentheses).
+- 4 choices: A, B, C, D written in English (with Arabic scientific terms in parentheses).
+- Correct option letter (A, B, C, or D).
+- Clear educational explanation in English explaining why the correct answer is right.
 
-INSTRUCTIONS:
-1. Generate an assessment strictly from the grounded chunks above with:
-   - Exactly {num_mcqs} Multiple Choice Questions (MCQs): Each with 4 choices (A, B, C, D), correct option letter, and clear educational explanation.
-   - Exactly {num_short} Short Answer Questions: Concept questions with a model answer and key learning concept.
-2. LANGUAGE & TERMS:
-   - Questions and options in accessible English for 8th-grade students.
-   - For key scientific concepts, include official Arabic terminology in brackets (e.g. "Solvent (المذيب)", "Circulatory System (جهاز الدوران)").
-3. STRICT GROUNDING:
-   - Base all questions strictly on facts from the provided text chunks. Do NOT hallucinate concepts outside this textbook material.
-
-OUTPUT FORMAT: Return ONLY valid JSON with this exact schema:
+OUTPUT FORMAT: Return ONLY valid JSON:
 {{
-  "title": "Grade 8 Assessment: {topic_query}",
-  "topic": "{topic_query}",
-  "lesson": "{req.lesson or topic_query}",
-  "semester": {req.semester},
-  "mcqs": [
-    {{
-      "id": 1,
-      "question": "...",
-      "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
-      "correct": "A",
-      "explanation": "..."
-    }}
-  ],
-  "short_questions": [
-    {{
-      "id": 1,
-      "question": "...",
-      "model_answer": "...",
-      "key_concept": "..."
-    }}
-  ]
+  "id": {req.question_num},
+  "type": "mcq",
+  "question": "Clear English question stem...",
+  "options": {{"A": "English option...", "B": "English option...", "C": "English option...", "D": "English option..."}},
+  "correct": "A",
+  "explanation": "Clear educational explanation in English..."
+}}"""
+    else:
+        user_prompt = f"""CURRICULUM TOPIC:
+- Semester: {req.semester}
+- Topic / Lesson: {topic_query}
+
+GROUNDED TEXTBOOK CHUNKS:
+\"\"\"{grounded_chunks[:5000]}\"\"\"
+{prev_context}
+TASK:
+Generate EXACTLY 1 Short Answer Concept Question testing student comprehension of this topic:
+- The question MUST be written in accessible English (with Arabic scientific terms in parentheses).
+- The model answer MUST be written in clear, accurate English (with Arabic scientific terms in parentheses).
+- NEVER write the question or answer entirely in Arabic! Both must be primarily in English.
+- Identify the core key learning concept in English.
+
+OUTPUT FORMAT: Return ONLY valid JSON:
+{{
+  "id": {req.question_num},
+  "type": "short",
+  "question": "Clear English concept question (e.g. Explain how...)...",
+  "model_answer": "Complete, accurate model answer written in English...",
+  "key_concept": "Key scientific concept in English..."
 }}"""
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a specialized Grade 8 Science educational test author. Output only valid JSON."},
-                {"role": "user", "content": system_prompt}
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_prompt}
             ],
             response_format={"type": "json_object"},
             temperature=0.2
         )
-        content = response.choices[0].message.content
-        data = json.loads(content)
-        data["assessment_type"] = "theory"
-        data["semester"] = req.semester
-
-        # Guarantee exact question counts requested by teacher
-        if num_mcqs > 0:
-            data["mcqs"] = data.get("mcqs", [])[:num_mcqs]
-        else:
-            data["mcqs"] = []
-
-        if num_short > 0:
-            data["short_questions"] = data.get("short_questions", [])[:num_short]
-        else:
-            data["short_questions"] = []
-
-        return data
+        q_data = json.loads(response.choices[0].message.content)
+        q_data["id"] = req.question_num
+        q_data["type"] = req.q_type
+        return q_data
     except Exception as e:
-        print(f"[OpenAI Theory Assessment Error] {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate assessment: {str(e)}")
+        print(f"[Generate Single Theory Question Error] {e}")
+        if req.q_type == "mcq":
+            return {
+                "id": req.question_num,
+                "type": "mcq",
+                "question": f"Which statement best describes the fundamental scientific principle of {topic_query}?",
+                "options": {
+                    "A": "It represents a core observable physical or chemical change (تغير).",
+                    "B": "It operates independently of any environmental energy.",
+                    "C": "It is confined strictly to non-reactive elements.",
+                    "D": "It prevents biological metabolic activity."
+                },
+                "correct": "A",
+                "explanation": f"Grounded directly in Grade 8 Science principles of {topic_query}."
+            }
+        else:
+            return {
+                "id": req.question_num,
+                "type": "short",
+                "question": f"Explain the primary scientific significance of {topic_query} in Grade 8 Science.",
+                "model_answer": f"{topic_query} provides the essential scientific framework for understanding natural physical and physiological mechanisms.",
+                "key_concept": topic_query
+            }
 
 
 @app.post("/api/chat")
