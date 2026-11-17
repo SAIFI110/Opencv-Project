@@ -230,21 +230,21 @@ GRADE_8_SEM3_TOC = [
 SEMESTER_CONFIGS = {
     "1": {
         "title": "Grade 8 - Semester 1 (الفصل الدراسي الأول)",
-        "json_candidates": ["semester 1.json", "grade_8_semester_1_science_complete_layout.json", "science_complete_layout.json"],
+        "json_candidates": ["semester_1.json", "semester 1.json", "grade_8_semester_1_science_complete_layout.json", "science_complete_layout.json"],
         "output_dir": "output_diagrams_sem1",
         "worksheet_dir": "worksheet sem1",
         "toc": GRADE_8_SEM1_TOC,
     },
     "2": {
         "title": "Grade 8 - Semester 2 (الفصل الدراسي الثاني)",
-        "json_candidates": ["semester 2.json", "grade_8_semester_2_science_complete_layout.json", "document (4).json"],
+        "json_candidates": ["semester_2.json", "semester 2.json", "grade_8_semester_2_science_complete_layout.json", "document (4).json"],
         "output_dir": "output_diagrams_sem2",
         "worksheet_dir": "worksheet sem2",
         "toc": GRADE_8_SEM2_TOC,
     },
     "3": {
         "title": "Grade 8 - Semester 3 (الفصل الدراسي الثالث)",
-        "json_candidates": ["semester 3.json", "grade_8_semester_3_science_complete_layout.json", "document (3).json"],
+        "json_candidates": ["semester_3.json", "semester 3.json", "grade_8_semester_3_science_complete_layout.json", "document (3).json"],
         "output_dir": "output_diagrams_sem3",
         "worksheet_dir": "worksheet sem3",
         "toc": GRADE_8_SEM3_TOC,
@@ -442,7 +442,6 @@ def run_pipeline(sem_key: str, force: bool = False):
 
     title = cfg["title"]
     output_dir = cfg["output_dir"]
-    csv_path = cfg["csv_path"]
     toc_registry = cfg["toc"]
 
     # Check if diagrams already exist to save tokens and prevent duplicates
