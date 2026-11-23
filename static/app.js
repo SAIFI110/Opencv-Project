@@ -10,6 +10,10 @@ const state = {
   score: { correct: 0, total: 0 }
 };
 
+// State tracker for previously asked question stems per diagram to ensure live variety
+const askedQuestionsByDiagram = new Map();
+let quizRunSeed = 1;
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCurriculum(state.semester);
   resetChat();
@@ -51,10 +55,12 @@ function populateModalDropdown() {
     const totalLabel = (state.curriculum && state.curriculum.total_labeling_diagrams != null)
       ? state.curriculum.total_labeling_diagrams
       : 0;
-    const allOpt = document.createElement('option');
-    allOpt.value = 'all';
-    allOpt.textContent = `All Approved Diagrams in Semester ${state.semester} (${totalLabel})`;
-    dropdown.appendChild(allOpt);
+    const promptOpt = document.createElement('option');
+    promptOpt.value = '';
+    promptOpt.disabled = true;
+    promptOpt.selected = true;
+    promptOpt.textContent = '-- Select a Lesson or Unit --';
+    dropdown.appendChild(promptOpt);
 
     if (!state.curriculum) return;
 
@@ -88,13 +94,12 @@ function populateModalDropdown() {
       dropdown.appendChild(noOpt);
     }
   } else if (state.assessmentType === 'diagram') {
-    const totalDiag = (state.curriculum && state.curriculum.total_diagrams != null)
-      ? state.curriculum.total_diagrams
-      : 0;
-    const allOpt = document.createElement('option');
-    allOpt.value = 'all';
-    allOpt.textContent = `All Diagrams in Semester ${state.semester} (${totalDiag})`;
-    dropdown.appendChild(allOpt);
+    const promptOpt = document.createElement('option');
+    promptOpt.value = '';
+    promptOpt.disabled = true;
+    promptOpt.selected = true;
+    promptOpt.textContent = '-- Select a Lesson or Unit --';
+    dropdown.appendChild(promptOpt);
 
     if (!state.curriculum) return;
 
@@ -119,10 +124,12 @@ function populateModalDropdown() {
     });
   } else {
     // Theory mode: list all genuine instructional lessons (Dars)
-    const allOpt = document.createElement('option');
-    allOpt.value = 'all';
-    allOpt.textContent = `All Units & Lessons in Semester ${state.semester}`;
-    dropdown.appendChild(allOpt);
+    const promptOpt = document.createElement('option');
+    promptOpt.value = '';
+    promptOpt.disabled = true;
+    promptOpt.selected = true;
+    promptOpt.textContent = '-- Select a Lesson or Unit --';
+    dropdown.appendChild(promptOpt);
 
     if (!state.curriculum) return;
 
@@ -191,6 +198,10 @@ function setModalTab(type) {
 
 async function confirmStartAssessment() {
   const selectedVal = document.getElementById('modalLessonDropdown') ? document.getElementById('modalLessonDropdown').value : '';
+  if (!selectedVal) {
+    alert('Please select a lesson or unit from the dropdown to continue.');
+    return;
+  }
   const qType = document.getElementById('modalQuestionType') ? document.getElementById('modalQuestionType').value : 'both';
   const qCount = document.getElementById('modalQuestionCount') ? parseInt(document.getElementById('modalQuestionCount').value, 10) : 5;
 
@@ -321,18 +332,28 @@ async function confirmStartAssessment() {
         const diag = diagrams[i];
         widgetObj.updateStatus(`Generating ${qCount} questions for Diagram ${i + 1} of ${diagrams.length}...`);
 
+        const prevQuestions = askedQuestionsByDiagram.get(diag.id) || [];
+        const currentSeed = quizRunSeed++;
+
         try {
           const singleRes = await fetch('/api/assessment/diagram/generate-single', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               diagram_id: diag.id,
-              num_questions: qCount
+              num_questions: qCount,
+              previous_questions: prevQuestions.slice(-12),
+              variation_seed: currentSeed
             })
           });
 
           if (singleRes.ok) {
             const cardData = await singleRes.json();
+
+            // Store new questions so future requests on this diagram vary
+            const newTexts = (cardData.questions || []).map(q => q.question).filter(Boolean);
+            askedQuestionsByDiagram.set(diag.id, [...prevQuestions, ...newTexts]);
+
             widgetObj.appendCard(cardData, i);
           } else {
             console.error(`Failed to generate questions for diagram ${diag.id}`);

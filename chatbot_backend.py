@@ -11,6 +11,7 @@ Production-ready FastAPI backend providing:
 
 import os
 import json
+import random
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
@@ -18,7 +19,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
-from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from openai import OpenAI
 import pypdf
@@ -236,6 +238,36 @@ def retrieve_chunks_from_qdrant(query: str, semester: int, limit: int = 5) -> st
         print(f"[Qdrant Retrieval Warning] {e}")
         return ""
 
+def _normalize_text(text: Optional[str]) -> str:
+    """Normalizes string inputs by stripping whitespace and handling None."""
+    return (text or "").strip()
+
+def _normalize_image_url(url: Optional[str]) -> str:
+    """Normalizes Windows/POSIX relative image paths into web-accessible URL paths."""
+    if not url:
+        return ""
+    u = url.replace("\\", "/")
+    return u if u.startswith("/") else "/" + u
+
+VARIATION_FOCUS_MODES = [
+    {
+        "name": "Anatomical Structures & Components",
+        "directive": "Focus on anatomical structures, spatial orientations, sub-components, and identifying specific labeled organs/elements."
+    },
+    {
+        "name": "Physiological & Physical Mechanisms",
+        "directive": "Focus on active biological pathways, physiological functions, fluid movements, or physical interactions depicted."
+    },
+    {
+        "name": "Cause-and-Effect Scientific Reasoning",
+        "directive": "Focus on cause-and-effect relationships, scientific reasoning ('Why' and 'How'), and explanatory deductions from the visual evidence."
+    },
+    {
+        "name": "Functional Roles, Comparisons & System Disruptions",
+        "directive": "Focus on comparative functional roles, consequences of component dysfunction/removal, and system-level equilibrium."
+    }
+]
+
 # ==============================================================================
 # PYDANTIC SCHEMAS
 # ==============================================================================
@@ -251,8 +283,10 @@ class ChatRequest(BaseModel):
     lesson: Optional[str] = None
 
 class SingleDiagramQuestionRequest(BaseModel):
-    diagram_id: int
-    num_questions: Optional[int] = 3
+    diagram_id: int = Field(..., gt=0)
+    num_questions: Optional[int] = Field(3, ge=1, le=10)
+    previous_questions: Optional[List[str]] = Field(default_factory=list, max_length=30)
+    variation_seed: Optional[int] = None
 
 class SingleTheoryQuestionRequest(BaseModel):
     semester: int
@@ -288,52 +322,6 @@ def serve_index():
     if index_file.exists():
         return FileResponse(str(index_file))
     return JSONResponse(content={"message": "Grade 8 Science AI Tutor API is running. UI loading..."})
-
-
-@app.get("/worksheet/{worksheet_id}")
-def serve_worksheet(worksheet_id: int):
-    """
-    Renders the HTML worksheet directly from Docker MySQL 'lesson_worksheets' table.
-    Open in any browser: e.g. http://127.0.0.1:8000/worksheet/1
-    """
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT worksheet_html FROM lesson_worksheets WHERE id = %s;", (worksheet_id,))
-            row = cur.fetchone()
-        conn.close()
-
-        if not row or not row.get("worksheet_html"):
-            raise HTTPException(status_code=404, detail="Worksheet not found in MySQL")
-
-        return HTMLResponse(content=row["worksheet_html"], status_code=200)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error rendering worksheet: {e}")
-
-
-@app.get("/api/worksheets")
-def get_worksheets_list(semester: int = Query(1, ge=1, le=3)):
-    """Lists all available worksheets in MySQL with one-click preview URLs."""
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("""
-            SELECT id, semester, unit, chapter, lesson, diagram_count, created_at
-            FROM lesson_worksheets
-            WHERE semester = %s
-            ORDER BY id;
-            """, (semester,))
-            rows = cur.fetchall()
-        conn.close()
-
-        for r in rows:
-            r["preview_url"] = f"/worksheet/{r['id']}"
-            if "created_at" in r and r["created_at"]:
-                r["created_at"] = str(r["created_at"])
-
-        return {"semester": semester, "total_worksheets": len(rows), "worksheets": rows}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/curriculum")
@@ -480,46 +468,84 @@ def get_diagrams_list_for_assessment(req: DiagramListRequest):
 
 
 @app.post("/api/assessment/diagram/generate-single")
-def generate_single_diagram_questions(req: SingleDiagramQuestionRequest):
+async def generate_single_diagram_questions(req: SingleDiagramQuestionRequest):
     """
     Generates EXACTLY num_questions for a single diagram.
     Returns structured questions array (mix of MCQ, Short, and Reasoning).
+    Uses anti-repetition tracking, variation focus modes, and async threadpool execution.
     """
+    if not client or not OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OpenAI client is not configured or OPENAI_API_KEY is missing")
+
     num_q = max(1, min(req.num_questions or 3, 10))
-    try:
+
+    def _fetch_diagram(diagram_id: int):
         conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
-                FROM diagram_metadata
-                WHERE id = %s;
-            """, (req.diagram_id,))
-            row = cur.fetchone()
-        conn.close()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, semester, unit, chapter, lesson, description, image_filename, image_path
+                    FROM diagram_metadata
+                    WHERE id = %s;
+                """, (diagram_id,))
+                return cur.fetchone()
+        finally:
+            conn.close()
+
+    try:
+        row = await run_in_threadpool(_fetch_diagram, req.diagram_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     if not row:
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    img_rel = row.get("image_path", "").replace("\\", "/")
-    if not img_rel.startswith("/"):
-        img_rel = "/" + img_rel
+    img_rel = _normalize_image_url(row.get("image_path", ""))
+    desc = _normalize_text(row.get("description")) or "Scientific illustration"
+    lesson_name = _normalize_text(row.get("lesson")) or "Science Lesson"
 
-    desc = row.get("description", "Scientific illustration")
-    lesson_name = row.get("lesson", "Science Lesson")
+    # Dynamic variation focus mode selection
+    seed_val = req.variation_seed if req.variation_seed is not None else random.randint(1, 100000)
+    focus_mode = VARIATION_FOCUS_MODES[seed_val % len(VARIATION_FOCUS_MODES)]
+
+    # Dynamic anti-repetition constraint block
+    anti_repetition_block = ""
+    if req.previous_questions:
+        cleaned_prev = [_normalize_text(q) for q in req.previous_questions if _normalize_text(q)]
+        if cleaned_prev:
+            prev_list = "\n".join(f"- {q}" for q in cleaned_prev)
+            anti_repetition_block = f"""
+CRITICAL ANTI-REPETITION CONSTRAINT:
+Do NOT repeat, duplicate, or superficially rephrase any of these previously asked questions:
+{prev_list}
+All newly generated questions MUST explore fresh aspects, distinct structures, or alternate reasoning angles not covered in the above list.
+"""
 
     prompt = f"""You are an educational assessment author inspecting this Saudi Grade 8 Science diagram.
 DIAGRAM CONTEXT:
 - Lesson: {lesson_name}
 - Detailed Description: {desc}
 
+PEDAGOGICAL VARIATION FOCUS:
+- Mode: {focus_mode['name']}
+- Directive: {focus_mode['directive']}
+{anti_repetition_block}
 CRITICAL TASK:
 Generate EXACTLY {num_q} distinct educational questions testing student comprehension of this specific illustration.
+Align the questions with the pedagogical variation focus directive.
 Mix the questions appropriately among:
 - 'mcq': Multiple Choice (4 options: A, B, C, D with correct option and concise explanation).
 - 'short': Concise factual question with model answer.
 - 'reasoning': Scientific reasoning question ('Why' / 'How') with model explanation.
+
+CRITICAL PEDAGOGICAL RULES & NEGATIVE CONSTRAINTS:
+1. Questions MUST test Grade 8 scientific curriculum concepts only (e.g., biological anatomy, physiological functions, organs, physical laws, or chemical structures).
+2. NEVER generate questions about book metadata, administrative text, or publishing information. Specifically, DO NOT ask about:
+   - 'وزارة التعليم' or 'Ministry of Education'
+   - Publication years like '1446' or '2024'
+   - Translations of governmental titles, logos, stamps, or document headers/footers
+   - Page numbers or item serial numbers
+If the description mentions any administrative logos or dates, completely ignore them and focus ONLY on the scientific illustration itself.
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 {{
@@ -544,13 +570,17 @@ OUTPUT FORMAT (STRICT JSON ONLY):
 }}
 Ensure the "questions" array contains EXACTLY {num_q} items."""
 
-    try:
-        res = client.chat.completions.create(
+    def _call_openai(p: str):
+        return client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": p}],
             response_format={"type": "json_object"},
-            temperature=0.2
+            temperature=0.65
         )
+
+    is_fallback = False
+    try:
+        res = await run_in_threadpool(_call_openai, prompt)
         q_data = json.loads(res.choices[0].message.content)
         questions = q_data.get("questions", [])
         if not questions:
@@ -564,8 +594,11 @@ Ensure the "questions" array contains EXACTLY {num_q} items."""
             if "reasoning_question" in q_data:
                 r_q = q_data["reasoning_question"]
                 questions.append({"type": "reasoning", **r_q})
+        if not questions:
+            raise ValueError("No questions parsed from model output")
     except Exception as err:
         print(f"[Single Diagram Question Authoring Error] {err}")
+        is_fallback = True
         questions = [
             {
                 "type": "short",
@@ -596,6 +629,8 @@ Ensure the "questions" array contains EXACTLY {num_q} items."""
         "lesson": lesson_name,
         "description": desc,
         "image_url": img_rel,
+        "focus_mode": focus_mode["name"],
+        "is_fallback": is_fallback,
         "total_questions": len(questions),
         "questions": questions
     }
