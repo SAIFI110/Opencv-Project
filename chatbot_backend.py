@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -320,7 +320,7 @@ def serve_index():
     """Serves the main application single page interface."""
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(str(index_file))
+        return FileResponse(str(index_file), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     return JSONResponse(content={"message": "Grade 8 Science AI Tutor API is running. UI loading..."})
 
 
@@ -856,15 +856,15 @@ OUTPUT FORMAT: Return ONLY valid JSON:
 @app.post("/api/chat")
 def conversational_tutor_chat(req: ChatRequest):
     """
-    Conversational AI Tutor endpoint.
+    Conversational AI Tutor endpoint with live word-by-word token streaming.
     STRICTLY grounded to Grade 8 Science textbook content only.
     Refuses all off-topic queries (sports, politics, entertainment, etc.).
     """
     if not client:
-        return {
-            "reply": "Please configure your OpenAI API key in .env to activate chat.",
-            "suggestions": ["Create an Assessment"]
-        }
+        return StreamingResponse(
+            iter(["Please configure your OpenAI API key in .env to activate chat."]),
+            media_type="text/plain; charset=utf-8"
+        )
 
     # Build the curriculum topic list for grounding context
     toc_list = TOC_REGISTRIES.get(req.semester, [])
@@ -931,39 +931,42 @@ EXAMPLES OF INTERACTIONS:
         messages.append({"role": msg.role, "content": msg.content})
     messages.append({"role": "user", "content": req.message})
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.1,
-            max_tokens=400
-        )
-        reply_text = response.choices[0].message.content
-
-        # Save to Docker MySQL chat_history table
+    def generate_stream():
+        full_reply = []
         try:
-            conn = get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO chat_history (semester, user_message, bot_reply) VALUES (%s, %s, %s)",
-                    (req.semester, req.message, reply_text)
-                )
-            conn.close()
-        except Exception as db_err:
-            print(f"[MySQL Chat Log Warning] {db_err}")
+            stream_response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                stream=True,
+                temperature=0.1,
+                max_tokens=400
+            )
+            for chunk in stream_response:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta.content or ""
+                    if delta:
+                        full_reply.append(delta)
+                        yield delta
+        except Exception as e:
+            print(f"[Streaming Error] {e}")
+            err_msg = "\n[Connection issue while generating response. Please try again.]"
+            full_reply.append(err_msg)
+            yield err_msg
+        finally:
+            complete_text = "".join(full_reply).strip()
+            if complete_text:
+                try:
+                    conn = get_db_connection()
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "INSERT INTO chat_history (semester, user_message, bot_reply) VALUES (%s, %s, %s)",
+                            (req.semester, req.message, complete_text)
+                        )
+                    conn.close()
+                except Exception as db_err:
+                    print(f"[MySQL Chat Log Warning] {db_err}")
 
-        suggestions = ["Create an Assessment"]
-
-        return {
-            "reply": reply_text,
-            "suggestions": suggestions
-        }
-    except Exception as e:
-        print(f"[Chatbot Endpoint Error] {e}")
-        return {
-            "reply": "I encountered a temporary connection issue. Please try asking your question again in a moment.",
-            "suggestions": ["Create an Assessment"]
-        }
+    return StreamingResponse(generate_stream(), media_type="text/plain; charset=utf-8")
 
 
 if __name__ == "__main__":

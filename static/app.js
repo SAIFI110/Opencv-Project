@@ -800,14 +800,58 @@ async function sendChatMessage() {
       })
     });
 
-    thinkingEl.remove();
-    if (!res.ok) throw new Error('Chat failed');
-    const data = await res.json();
+    if (!res.ok) {
+      thinkingEl.remove();
+      throw new Error(`Chat failed with status ${res.status}`);
+    }
 
-    state.chatHistory.push({ role: 'user', content: text });
-    state.chatHistory.push({ role: 'assistant', content: data.reply });
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/plain') || contentType.includes('text/event-stream')) {
+      thinkingEl.remove();
 
-    appendBotMessage(data.reply, data.suggestions);
+      // Create stream container in the DOM
+      const container = document.getElementById('messagesContainer');
+      const row = document.createElement('div');
+      row.className = 'message-row bot';
+      row.innerHTML = `
+        <div class="message-avatar">✦</div>
+        <div class="message-body">
+          <div class="message-stream-content"></div>
+        </div>
+      `;
+      container.appendChild(row);
+      const contentEl = row.querySelector('.message-stream-content');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let botReply = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        botReply += chunk;
+        contentEl.innerHTML = formatSimpleMarkdown(botReply);
+        scrollToBottom();
+      }
+
+      state.chatHistory.push({ role: 'user', content: text });
+      state.chatHistory.push({ role: 'assistant', content: botReply });
+
+      // Add suggestion chip after streaming completes
+      const bodyEl = row.querySelector('.message-body');
+      const chipsEl = document.createElement('div');
+      chipsEl.className = 'suggestion-wrap';
+      chipsEl.innerHTML = `<button class="suggestion-chip" onclick="handleQuickChip('Create an Assessment')">Create an Assessment</button>`;
+      bodyEl.appendChild(chipsEl);
+      scrollToBottom();
+    } else {
+      thinkingEl.remove();
+      const data = await res.json();
+      state.chatHistory.push({ role: 'user', content: text });
+      state.chatHistory.push({ role: 'assistant', content: data.reply });
+      appendBotMessage(data.reply, data.suggestions);
+    }
   } catch (e) {
     thinkingEl.remove();
     appendBotMessage(`Error: ${e.message}`);
