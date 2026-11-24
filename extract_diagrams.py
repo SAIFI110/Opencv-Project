@@ -217,6 +217,7 @@ Respond ONLY with valid JSON:
                     ],
                 },
             ],
+            stream=True,
             response_format={"type": "json_object"},
             temperature=0.0,
         )
